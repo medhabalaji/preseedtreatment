@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+growth_logs.db
+static/captures/*
+static/overlays/*
+static/timelapses/*
+!static/captures/.gitkeep
+!static/overlays/.gitkeep
+!static/timelapses/.gitkeep
+
+.env
+.DS_Store
+Thumbs.db

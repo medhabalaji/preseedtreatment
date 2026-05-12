@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Green Moong Batch Comparison</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+      :root {
+        --forest: #2d6a4f;
+        --forest-soft: #40916c;
+        --surface: #ffffff;
+        --page: #f8f9fa;
+        --line: #e8ecef;
+        --ink: #385348;
+        --muted: #6c757d;
+        --leaf: #e7f3ed;
+        --mist: #f4f8f6;
+      }
+
+      body {
+        background: var(--page);
+        color: var(--ink);
+        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      code {
+        color: var(--forest);
+      }
+
+      .app-shell {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 28px 16px 48px;
+      }
+
+      .topbar {
+        align-items: center;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        gap: 16px;
+        justify-content: space-between;
+        margin-bottom: 24px;
+        padding-bottom: 18px;
+      }
+
+      .brand-mark {
+        background: var(--forest);
+        border-radius: 8px;
+        height: 40px;
+        width: 40px;
+      }
+
+      .brand-title,
+      .section-title {
+        color: var(--forest);
+        font-weight: 750;
+        letter-spacing: 0;
+      }
+
+      .panel,
+      .stat-card,
+      .gallery-card,
+      .empty-state {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .panel,
+      .stat-card {
+        padding: 20px;
+      }
+
+      .stat-label {
+        color: var(--muted);
+        font-size: 0.82rem;
+        font-weight: 650;
+        text-transform: uppercase;
+      }
+
+      .stat-value {
+        color: var(--forest);
+        font-size: clamp(1.75rem, 4vw, 2.75rem);
+        font-weight: 750;
+        line-height: 1.05;
+      }
+
+      .camera-frame {
+        background: #eef2f0;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .camera-frame::after {
+        background: var(--forest);
+        bottom: 0;
+        content: "";
+        left: 50%;
+        opacity: 0.7;
+        position: absolute;
+        top: 0;
+        width: 3px;
+      }
+
+      .camera-frame video,
+      .camera-frame canvas {
+        aspect-ratio: 4 / 3;
+        display: block;
+        object-fit: cover;
+        width: 100%;
+      }
+
+      .split-labels {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .split-label {
+        background: var(--leaf);
+        border-radius: 8px;
+        color: var(--forest);
+        font-weight: 700;
+        padding: 8px 10px;
+        text-align: center;
+      }
+
+      .btn-forest {
+        --bs-btn-bg: var(--forest);
+        --bs-btn-border-color: var(--forest);
+        --bs-btn-hover-bg: var(--forest-soft);
+        --bs-btn-hover-border-color: var(--forest-soft);
+        --bs-btn-color: #ffffff;
+        --bs-btn-hover-color: #ffffff;
+      }
+
+      .btn-outline-forest {
+        --bs-btn-border-color: var(--forest);
+        --bs-btn-color: var(--forest);
+        --bs-btn-hover-bg: var(--leaf);
+        --bs-btn-hover-border-color: var(--forest);
+        --bs-btn-hover-color: var(--forest);
+      }
+
+      .badge-soft,
+      .endpoint-box {
+        background: var(--leaf);
+        color: var(--forest);
+        font-weight: 650;
+      }
+
+      .endpoint-box {
+        border: 1px solid #d8eadf;
+        border-radius: 8px;
+        overflow-wrap: anywhere;
+        padding: 12px 14px;
+      }
+
+      .comparison-row {
+        background: var(--mist);
+        border: 1px solid #d8eadf;
+        border-radius: 8px;
+        padding: 12px 14px;
+      }
+
+      .gallery-card {
+        overflow: hidden;
+      }
+
+      .gallery-card img {
+        aspect-ratio: 4 / 3;
+        background: #eef2f0;
+        display: block;
+        object-fit: cover;
+        width: 100%;
+      }
+
+      .gallery-meta {
+        padding: 14px 16px 16px;
+      }
+
+      .status-line {
+        color: var(--muted);
+        min-height: 24px;
+      }
+
+      .timelapse-video {
+        background: #eef2f0;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        display: none;
+        margin-top: 14px;
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div class="d-flex align-items-center gap-3">
+          <div class="brand-mark" aria-hidden="true"></div>
+          <div>
+            <h1 class="brand-title h3 mb-1">Green Moong Batch Comparison</h1>
+            <p class="text-secondary mb-0">Left: pre-treated seeds. Right: untreated control.</p>
+          </div>
+        </div>
+        <span class="badge rounded-pill badge-soft px-3 py-2">2-Batch OpenCV Monitor</span>
+      </header>
+
+      <section class="row g-3 mb-4">
+        <div class="col-lg-3 col-md-6">
+          <div class="stat-card h-100">
+            <div class="stat-label mb-2">Pre-treated Germination</div>
+            <div class="stat-value" id="treatedGermination">{{ "%.2f"|format(latest.treated_germination_percentage) if latest else "0.00" }}%</div>
+            <div class="text-secondary mt-2"><span id="treatedSprouts">{{ latest.treated_sprout_count if latest else 0 }}</span> sprouts</div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+          <div class="stat-card h-100">
+            <div class="stat-label mb-2">Untreated Germination</div>
+            <div class="stat-value" id="untreatedGermination">{{ "%.2f"|format(latest.untreated_germination_percentage) if latest else "0.00" }}%</div>
+            <div class="text-secondary mt-2"><span id="untreatedSprouts">{{ latest.untreated_sprout_count if latest else 0 }}</span> sprouts</div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+          <div class="stat-card h-100">
+            <div class="stat-label mb-2">Germination Gap</div>
+            <div class="stat-value" id="germinationGap">{{ "%.2f"|format((latest.treated_germination_percentage - latest.untreated_germination_percentage) if latest else 0) }}%</div>
+            <div class="text-secondary mt-2">Pre-treated minus untreated</div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+          <div class="stat-card h-100">
+            <div class="stat-label mb-2">Growth Area Gap</div>
+            <div class="stat-value" id="growthGap">{{ "%.0f"|format((latest.treated_white_area - latest.untreated_white_area) if latest else 0) }}</div>
+            <div class="text-secondary mt-2">White radical pixels</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel mb-4">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+          <h2 class="section-title h5 mb-0">2-3 Day Difference Summary</h2>
+          <span class="badge rounded-pill badge-soft px-3 py-2" id="leaderText">{{ comparison.leader }}</span>
+        </div>
+        <div class="row g-3">
+          <div class="col-md-3">
+            <div class="comparison-row">
+              <div class="stat-label">Pre-treated Speed</div>
+              <div class="h4 mb-0" id="treatedSpeed">{{ "%.2f"|format(comparison.treated_germination_speed) }} pp/day</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="comparison-row">
+              <div class="stat-label">Untreated Speed</div>
+              <div class="h4 mb-0" id="untreatedSpeed">{{ "%.2f"|format(comparison.untreated_germination_speed) }} pp/day</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="comparison-row">
+              <div class="stat-label">Speed Difference</div>
+              <div class="h4 mb-0" id="speedGap">{{ "%.2f"|format(comparison.germination_speed_difference) }} pp/day</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="comparison-row">
+              <div class="stat-label">Growth Speed Gap</div>
+              <div class="h4 mb-0" id="areaSpeedGap">{{ "%.0f"|format(comparison.growth_speed_difference) }} px/day</div>
+            </div>
+          </div>
+        </div>
+        <p class="text-secondary mb-0 mt-3">
+          Speed is calculated from the earliest and latest captures in the last {{ comparison.days }} days. Capture the same camera view at fixed intervals to make this comparison meaningful.
+        </p>
+      </section>
+
+      <section class="row g-3 mb-4">
+        <div class="col-lg-8">
+          <div class="panel h-100">
+            <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
+              <h2 class="section-title h5 mb-0">Webcam Monitoring</h2>
+              <span class="badge rounded-pill badge-soft" id="cameraState">Idle</span>
+            </div>
+            <div class="row g-3">
+              <div class="col-md-7">
+                <div class="camera-frame">
+                  <video id="webcam" autoplay playsinline muted></video>
+                  <canvas id="snapshotCanvas" class="d-none"></canvas>
+                </div>
+                <div class="split-labels mt-2">
+                  <div class="split-label">Pre-treated</div>
+                  <div class="split-label">Untreated</div>
+                </div>
+              </div>
+              <div class="col-md-5">
+                <label for="seedCount" class="form-label">Expected seeds per batch</label>
+                <input id="seedCount" class="form-control mb-3" type="number" min="1" value="{{ latest.expected_seed_count if latest else 25 }}">
+
+                <label for="captureInterval" class="form-label">Auto interval seconds</label>
+                <input id="captureInterval" class="form-control mb-3" type="number" min="5" value="1800">
+
+                <div class="d-grid gap-2">
+                  <button class="btn btn-forest" id="startCameraBtn" type="button">Start Webcam</button>
+                  <button class="btn btn-outline-forest" id="captureBtn" type="button" disabled>Capture Both Batches</button>
+                  <button class="btn btn-outline-forest" id="autoBtn" type="button" disabled>Start Auto Monitor</button>
+                </div>
+
+                <div class="status-line mt-3" id="statusLine"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-4">
+          <div class="panel h-100">
+            <h2 class="section-title h5 mb-3">ESP32-CAM Option</h2>
+            <label class="form-label">Upload target</label>
+            <div class="endpoint-box mb-3" id="endpointBox"></div>
+            <label for="localImage" class="form-label">Local side-by-side JPEG test</label>
+            <input class="form-control mb-3" id="localImage" type="file" accept="image/jpeg,image/png">
+            <button class="btn btn-forest w-100" id="uploadFileBtn" type="button">Analyze Selected Image</button>
+            <div class="status-line mt-3">Mount the ESP32-CAM so both trays stay in the same frame: pre-treated on the left, untreated on the right.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel mb-4">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+          <div>
+            <h2 class="section-title h5 mb-1">Timelapse Export</h2>
+            <p class="text-secondary mb-0">Build an MP4 from saved overlay frames after auto monitoring finishes.</p>
+          </div>
+          <div class="d-flex flex-wrap gap-2">
+            <input class="form-control" id="timelapseDays" type="number" min="1" value="3" style="width: 96px" aria-label="Timelapse days">
+            <input class="form-control" id="timelapseFps" type="number" min="1" value="6" style="width: 96px" aria-label="Timelapse fps">
+            <button class="btn btn-forest" id="timelapseBtn" type="button">Create Timelapse</button>
+          </div>
+        </div>
+        <div class="status-line mt-3" id="timelapseStatus"></div>
+        <video class="timelapse-video" id="timelapseVideo" controls></video>
+      </section>
+
+      <section>
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h2 class="section-title h5 mb-0">Recent Comparison Frames</h2>
+          <span class="text-secondary small" id="galleryCount">{{ logs|length }} shown</span>
+        </div>
+
+        <div class="row g-3" id="galleryGrid">
+          {% for log in logs %}
+            <div class="col-sm-6 col-lg-4">
+              <article class="gallery-card h-100">
+                <img src="{{ url_for('static', filename=log.overlay_image_path.replace('static/', '')) }}" alt="Analyzed batch comparison overlay">
+                <div class="gallery-meta">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="badge rounded-pill badge-soft">{{ log.treated_sprout_count }} vs {{ log.untreated_sprout_count }} sprouts</span>
+                    <span class="text-secondary small">{{ log.timestamp.strftime("%Y-%m-%d %H:%M") }}</span>
+                  </div>
+                  <div class="text-secondary small">Germination: {{ "%.2f"|format(log.treated_germination_percentage) }}% vs {{ "%.2f"|format(log.untreated_germination_percentage) }}%</div>
+                  <div class="text-secondary small">Area: {{ "%.0f"|format(log.treated_white_area) }} vs {{ "%.0f"|format(log.untreated_white_area) }}</div>
+                </div>
+              </article>
+            </div>
+          {% endfor %}
+        </div>
+
+        {% if not logs %}
+          <div class="empty-state p-5 text-center" id="emptyState">
+            <h3 class="h5 text-secondary mb-2">No comparison frames yet</h3>
+            <p class="text-secondary mb-0">Start the webcam or upload a side-by-side JPEG frame.</p>
+          </div>
+        {% endif %}
+      </section>
+    </main>
+
+    <script>
+      const webcam = document.getElementById("webcam");
+      const canvas = document.getElementById("snapshotCanvas");
+      const startCameraBtn = document.getElementById("startCameraBtn");
+      const captureBtn = document.getElementById("captureBtn");
+      const autoBtn = document.getElementById("autoBtn");
+      const uploadFileBtn = document.getElementById("uploadFileBtn");
+      const localImage = document.getElementById("localImage");
+      const seedCount = document.getElementById("seedCount");
+      const captureInterval = document.getElementById("captureInterval");
+      const cameraState = document.getElementById("cameraState");
+      const statusLine = document.getElementById("statusLine");
+      const endpointBox = document.getElementById("endpointBox");
+      const galleryGrid = document.getElementById("galleryGrid");
+      const galleryCount = document.getElementById("galleryCount");
+      const emptyState = document.getElementById("emptyState");
+      const timelapseBtn = document.getElementById("timelapseBtn");
+      const timelapseDays = document.getElementById("timelapseDays");
+      const timelapseFps = document.getElementById("timelapseFps");
+      const timelapseStatus = document.getElementById("timelapseStatus");
+      const timelapseVideo = document.getElementById("timelapseVideo");
+
+      let stream = null;
+      let autoTimer = null;
+
+      updateEndpoint();
+
+      seedCount.addEventListener("input", updateEndpoint);
+
+      startCameraBtn.addEventListener("click", async () => {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "environment" },
+            audio: false
+          });
+          webcam.srcObject = stream;
+          captureBtn.disabled = false;
+          autoBtn.disabled = false;
+          cameraState.textContent = "Live";
+          setStatus("Webcam ready. Keep pre-treated seeds on the left and untreated seeds on the right.");
+        } catch (error) {
+          setStatus("Camera access failed. Check browser permissions or use local JPEG upload.");
+        }
+      });
+
+      captureBtn.addEventListener("click", async () => {
+        const blob = await captureWebcamBlob();
+        if (blob) {
+          await uploadImageBlob(blob);
+        }
+      });
+
+      autoBtn.addEventListener("click", () => {
+        if (autoTimer) {
+          clearInterval(autoTimer);
+          autoTimer = null;
+          autoBtn.textContent = "Start Auto Monitor";
+          cameraState.textContent = stream ? "Live" : "Idle";
+          setStatus("Auto monitor stopped.");
+          return;
+        }
+
+        const seconds = Math.max(Number(captureInterval.value) || 1800, 5);
+        autoTimer = setInterval(async () => {
+          const blob = await captureWebcamBlob();
+          if (blob) {
+            await uploadImageBlob(blob);
+          }
+        }, seconds * 1000);
+        autoBtn.textContent = "Stop Auto Monitor";
+        cameraState.textContent = "Auto";
+        setStatus(`Auto monitor running every ${seconds} seconds.`);
+      });
+
+      uploadFileBtn.addEventListener("click", async () => {
+        const file = localImage.files[0];
+        if (!file) {
+          setStatus("Select a side-by-side JPEG or PNG first.");
+          return;
+        }
+        await uploadImageBlob(file);
+      });
+
+      timelapseBtn.addEventListener("click", async () => {
+        const days = Math.max(Number(timelapseDays.value) || 3, 1);
+        const fps = Math.max(Number(timelapseFps.value) || 6, 1);
+        timelapseStatus.textContent = "Creating timelapse...";
+        timelapseBtn.disabled = true;
+
+        try {
+          const response = await fetch(`/create_timelapse?days=${days}&fps=${fps}`, { method: "POST" });
+          const payload = await response.json();
+
+          if (!response.ok) {
+            throw new Error(payload.error || "Timelapse creation failed.");
+          }
+
+          timelapseVideo.src = payload.timelapse_url;
+          timelapseVideo.style.display = "block";
+          timelapseStatus.innerHTML = `Timelapse ready: <a href="${payload.timelapse_url}" download>download MP4</a> (${payload.frame_count} frames at ${payload.fps} fps).`;
+        } catch (error) {
+          timelapseStatus.textContent = error.message;
+        } finally {
+          timelapseBtn.disabled = false;
+        }
+      });
+
+      async function captureWebcamBlob() {
+        if (!stream || !webcam.videoWidth) {
+          setStatus("Start the webcam before capturing.");
+          return null;
+        }
+
+        canvas.width = webcam.videoWidth;
+        canvas.height = webcam.videoHeight;
+        const context = canvas.getContext("2d");
+        context.drawImage(webcam, 0, 0, canvas.width, canvas.height);
+
+        return new Promise((resolve) => {
+          canvas.toBlob(resolve, "image/jpeg", 0.92);
+        });
+      }
+
+      async function uploadImageBlob(blob) {
+        const count = Math.max(Number(seedCount.value) || 25, 1);
+        setStatus("Analyzing both batches...");
+
+        try {
+          const response = await fetch(`/upload_image?seed_count=${count}`, {
+            method: "POST",
+            headers: { "Content-Type": "image/jpeg" },
+            body: blob
+          });
+          const payload = await response.json();
+
+          if (!response.ok) {
+            throw new Error(payload.error || "Analysis failed.");
+          }
+
+          updateStats(payload);
+          updateComparison(payload.comparison);
+          prependGalleryCard(payload);
+          setStatus("Comparison saved.");
+        } catch (error) {
+          setStatus(error.message);
+        }
+      }
+
+      function updateStats(log) {
+        document.getElementById("treatedGermination").textContent = `${Number(log.treated_germination_percentage).toFixed(2)}%`;
+        document.getElementById("untreatedGermination").textContent = `${Number(log.untreated_germination_percentage).toFixed(2)}%`;
+        document.getElementById("treatedSprouts").textContent = log.treated_sprout_count;
+        document.getElementById("untreatedSprouts").textContent = log.untreated_sprout_count;
+        document.getElementById("germinationGap").textContent = `${Number(log.germination_difference).toFixed(2)}%`;
+        document.getElementById("growthGap").textContent = Number(log.white_area_difference).toFixed(0);
+      }
+
+      function updateComparison(summary) {
+        if (!summary) {
+          return;
+        }
+        document.getElementById("leaderText").textContent = summary.leader;
+        document.getElementById("treatedSpeed").textContent = `${Number(summary.treated_germination_speed).toFixed(2)} pp/day`;
+        document.getElementById("untreatedSpeed").textContent = `${Number(summary.untreated_germination_speed).toFixed(2)} pp/day`;
+        document.getElementById("speedGap").textContent = `${Number(summary.germination_speed_difference).toFixed(2)} pp/day`;
+        document.getElementById("areaSpeedGap").textContent = `${Number(summary.growth_speed_difference).toFixed(0)} px/day`;
+      }
+
+      function prependGalleryCard(log) {
+        if (emptyState) {
+          emptyState.remove();
+        }
+
+        const timestamp = new Date(log.timestamp).toLocaleString([], {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+
+        const wrapper = document.createElement("div");
+        wrapper.className = "col-sm-6 col-lg-4";
+        wrapper.innerHTML = `
+          <article class="gallery-card h-100">
+            <img src="${log.overlay_url}" alt="Analyzed batch comparison overlay">
+            <div class="gallery-meta">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge rounded-pill badge-soft">${log.treated_sprout_count} vs ${log.untreated_sprout_count} sprouts</span>
+                <span class="text-secondary small">${timestamp}</span>
+              </div>
+              <div class="text-secondary small">Germination: ${Number(log.treated_germination_percentage).toFixed(2)}% vs ${Number(log.untreated_germination_percentage).toFixed(2)}%</div>
+              <div class="text-secondary small">Area: ${Number(log.treated_white_area).toFixed(0)} vs ${Number(log.untreated_white_area).toFixed(0)}</div>
+            </div>
+          </article>
+        `;
+
+        galleryGrid.prepend(wrapper);
+        while (galleryGrid.children.length > 10) {
+          galleryGrid.lastElementChild.remove();
+        }
+        galleryCount.textContent = `${galleryGrid.children.length} shown`;
+      }
+
+      function updateEndpoint() {
+        endpointBox.textContent = `${window.location.origin}/upload_image?seed_count=${seedCount.value || 25}`;
+      }
+
+      function setStatus(message) {
+        statusLine.textContent = message;
+      }
+    </script>
+  </body>
+</html>
