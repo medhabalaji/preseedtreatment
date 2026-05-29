@@ -16,10 +16,10 @@ A Python Flask dashboard for sprout intelligence. SonicSeed combines germination
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-python app.py
+python run_sonicseed.py
 ```
 
-Open `http://localhost:5000`.
+Open `http://127.0.0.1:5003`.
 
 Register once from `/register`, then log back in from `/login` with the same email and password.
 
