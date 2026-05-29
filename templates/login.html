@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login | SonicSeed</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+      :root {
+        color-scheme: light;
+        --forest: #2d6a4f;
+        --forest-soft: #40916c;
+        --moss: #74c69d;
+        --sun: #e9c46a;
+        --water: #56cfe1;
+        --surface: rgba(255, 255, 255, 0.78);
+        --page: #f8f9fa;
+        --line: #e8ecef;
+        --ink: #385348;
+        --muted: #6c757d;
+        --leaf: #e7f3ed;
+        --mist: #f4f8f6;
+        --glass: rgba(255, 255, 255, 0.58);
+        --glass-strong: rgba(255, 255, 255, 0.84);
+        --glow: rgba(86, 207, 225, 0.24);
+      }
+
+      body[data-theme="dark"] {
+        color-scheme: dark;
+        --forest: #7bd7a4;
+        --forest-soft: #95e2b8;
+        --moss: #52b788;
+        --sun: #f4d35e;
+        --water: #48cae4;
+        --surface: #17211d;
+        --page: #0d1411;
+        --line: #2a3b33;
+        --ink: #e7f2ed;
+        --muted: #a8b8b0;
+        --leaf: #20382e;
+        --mist: #121c18;
+        --glass: rgba(23, 33, 29, 0.62);
+        --glass-strong: rgba(23, 33, 29, 0.84);
+        --glow: rgba(123, 215, 164, 0.18);
+      }
+
+      body {
+        align-items: center;
+        background:
+          url("data:image/svg+xml,%3Csvg width='180' height='140' viewBox='0 0 180 140' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23e9c46a' stroke-opacity='.18' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cellipse cx='42' cy='96' rx='13' ry='10' transform='rotate(-24 42 96)'/%3E%3Cpath d='M53 90c19-22 42-30 68-25'/%3E%3Cpath d='M94 68c-10-14-10-28 0-42 12 14 12 28 0 42Z'/%3E%3Cpath d='M112 65c15-11 29-13 43-4-14 12-28 14-43 4Z'/%3E%3C/g%3E%3C/svg%3E") 8% 22% / 180px 140px repeat,
+          url("data:image/svg+xml,%3Csvg width='160' height='160' viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%2356cfe1' stroke-opacity='.13' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M80 126C64 101 58 78 63 56c4-18 15-32 33-43 4 22 1 41-9 57-8 13-21 22-39 27'/%3E%3Cpath d='M83 124c21-21 35-45 42-72'/%3E%3Cpath d='M112 76c18 3 31 13 39 30-20 1-33-9-39-30Z'/%3E%3C/g%3E%3C/svg%3E") right 12% top 36% / 160px 160px repeat-y,
+          linear-gradient(135deg, rgba(64, 145, 108, 0.08), transparent 28%),
+          linear-gradient(315deg, rgba(216, 243, 220, 0.45), transparent 32%),
+          var(--page);
+        color: var(--ink);
+        display: flex;
+        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        min-height: 100vh;
+      }
+
+      body::before {
+        background-image:
+          url("data:image/svg+xml,%3Csvg width='220' height='220' viewBox='0 0 220 220' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%2340916c' stroke-opacity='.16' stroke-width='4' stroke-linecap='round'%3E%3Cpath d='M54 170c40-44 68-89 72-135'/%3E%3Cpath d='M103 70c-33-7-55-25-64-53 35 1 58 20 64 53Z'/%3E%3Cpath d='M118 95c38-7 64-31 70-67-40 4-64 29-70 67Z'/%3E%3Cpath d='M77 151c-25-3-44-17-52-40 28-1 46 14 52 40Z'/%3E%3C/g%3E%3C/svg%3E"),
+          url("data:image/svg+xml,%3Csvg width='260' height='180' viewBox='0 0 260 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%232d6a4f' stroke-opacity='.11' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M28 142c35-41 78-59 130-54 35 4 58 19 74 46'/%3E%3Cpath d='M91 96c-26-19-38-43-36-72 31 9 49 33 36 72Z'/%3E%3Cpath d='M158 88c26-24 54-33 84-25-18 31-46 39-84 25Z'/%3E%3C/g%3E%3C/svg%3E");
+        content: "";
+        inset: 0;
+        opacity: 0.55;
+        pointer-events: none;
+        position: fixed;
+        z-index: -1;
+      }
+
+      body[data-theme="dark"] .text-secondary {
+        color: var(--muted) !important;
+      }
+
+      body[data-theme="dark"] .form-control {
+        background: #101815;
+        border-color: var(--line);
+        color: var(--ink);
+      }
+
+      .auth-shell {
+        max-width: 1040px;
+        padding: 28px 16px;
+        width: 100%;
+        position: relative;
+        z-index: 1;
+      }
+
+      .brand-mark {
+        background:
+          url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 31V13' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M20 17c-7 0-11-4-11-10 7 0 11 4 11 10Z' fill='%23b7e4c7'/%3E%3Cpath d='M20 20c8 0 12-5 12-12-8 0-12 5-12 12Z' fill='%2395d5b2'/%3E%3Cpath d='M12 31c3-4 13-4 16 0' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") center / 30px 30px no-repeat,
+          var(--forest);
+        border-radius: 8px;
+        height: 44px;
+        width: 44px;
+      }
+
+      .auth-panel,
+      .signal-panel {
+        background:
+          linear-gradient(145deg, rgba(255, 255, 255, 0.36), transparent 42%),
+          var(--glass-strong);
+        border: 1px solid rgba(216, 234, 223, 0.78);
+        border-radius: 8px;
+        backdrop-filter: blur(18px) saturate(1.22);
+        box-shadow: 0 14px 36px rgba(33, 76, 57, 0.06);
+        padding: 28px;
+      }
+
+      .signal-panel {
+        background:
+          linear-gradient(145deg, rgba(255, 255, 255, 0.22), transparent 42%),
+          rgba(231, 243, 237, 0.52);
+        border-color: #d8eadf;
+      }
+
+      body[data-theme="dark"] .auth-panel {
+        background: var(--surface);
+      }
+
+      body[data-theme="dark"] .signal-panel {
+        background: var(--leaf);
+        border-color: var(--line);
+      }
+
+      .section-title {
+        color: var(--forest);
+        font-weight: 750;
+        letter-spacing: 0;
+      }
+
+      .btn-forest {
+        --bs-btn-bg: var(--forest);
+        --bs-btn-border-color: var(--forest);
+        --bs-btn-hover-bg: var(--forest-soft);
+        --bs-btn-hover-border-color: var(--forest-soft);
+        --bs-btn-color: #ffffff;
+        --bs-btn-hover-color: #ffffff;
+      }
+
+      .mini-metric {
+        background: var(--surface);
+        border: 1px solid #d8eadf;
+        border-radius: 8px;
+        padding: 14px;
+      }
+
+      body[data-theme="dark"] .mini-metric {
+        background: #101815;
+        border-color: var(--line);
+      }
+
+      .theme-toggle {
+        position: fixed;
+        right: 16px;
+        top: 16px;
+        z-index: 10;
+      }
+    </style>
+  </head>
+  <body>
+    <button class="btn btn-outline-success btn-sm theme-toggle" id="themeToggle" type="button" aria-pressed="false">Dark mode</button>
+    <main class="auth-shell mx-auto">
+      <div class="row g-4 align-items-stretch">
+        <div class="col-lg-6">
+          <section class="auth-panel h-100">
+            <div class="d-flex align-items-center gap-3 mb-4">
+              <div class="brand-mark" aria-hidden="true"></div>
+              <div>
+                <h1 class="section-title h3 mb-1">Welcome back to SonicSeed</h1>
+                <p class="text-secondary mb-0">Log in to continue your sprout intelligence dashboard.</p>
+              </div>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="alert alert-{{ category }} py-2">{{ message }}</div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            <form method="post" novalidate>
+              <label for="email" class="form-label">Email</label>
+              <input id="email" name="email" class="form-control mb-3" type="email" autocomplete="email" required>
+
+              <label for="password" class="form-label">Password</label>
+              <input id="password" name="password" class="form-control mb-4" type="password" autocomplete="current-password" required>
+
+              <button class="btn btn-forest w-100" type="submit">Log In</button>
+            </form>
+
+            <p class="text-secondary mt-4 mb-0">New here? <a href="{{ url_for('register') }}">Create an account</a></p>
+          </section>
+        </div>
+
+        <div class="col-lg-6">
+          <section class="signal-panel h-100">
+            <h2 class="section-title h4 mb-3">SonicSeed plant intelligence</h2>
+            <p class="mb-4">Your saved account keeps previous registrations available, while the dashboard combines growth monitoring, environmental scoring, and sprout food guidance.</p>
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <div class="mini-metric h-100">
+                  <strong>Persistent users</strong>
+                  <div class="text-secondary small mt-1">Register once, return later, and keep analyses connected to the account.</div>
+                </div>
+              </div>
+              <div class="col-sm-6">
+                <div class="mini-metric h-100">
+                  <strong>Sprout insights</strong>
+                  <div class="text-secondary small mt-1">Identify likely sprouts and get care, harvest, nutrition, and Indian food ideas.</div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+    <script>
+      const themeToggle = document.getElementById("themeToggle");
+      initializeTheme();
+
+      themeToggle.addEventListener("click", () => {
+        const nextTheme = document.body.dataset.theme === "dark" ? "light" : "dark";
+        applyTheme(nextTheme);
+        localStorage.setItem("sonicseed-theme", nextTheme);
+      });
+
+      function initializeTheme() {
+        applyTheme(localStorage.getItem("sonicseed-theme") || "light");
+      }
+
+      function applyTheme(theme) {
+        const normalizedTheme = theme === "dark" ? "dark" : "light";
+        document.body.dataset.theme = normalizedTheme;
+        themeToggle.textContent = normalizedTheme === "dark" ? "Light mode" : "Dark mode";
+        themeToggle.setAttribute("aria-pressed", normalizedTheme === "dark" ? "true" : "false");
+      }
+    </script>
+  </body>
+</html>

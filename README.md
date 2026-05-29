@@ -1,12 +1,14 @@
-# Chickpea Germination Intelligence
+# SonicSeed
 
-A Python Flask dashboard for chickpea germination monitoring. The main dashboard focuses on germination-relevant environmental conditions, while seed image monitoring remains available as a feature.
+A Python Flask dashboard for sprout intelligence. SonicSeed combines germination-relevant environmental conditions, seed image monitoring, and practical food guidance.
 
 - Temperature/humidity simulator
 - Chickpea germination suitability score
 - Moisture stress and vapor pressure deficit
 - Treated vs control chickpea image monitoring
 - ESP32-CAM or webcam upload path
+- Login/register with saved users
+- Sprout photo identification with care, harvest, Indian food, and nutrition guidance
 
 ## Setup
 
@@ -18,6 +20,8 @@ python app.py
 ```
 
 Open `http://localhost:5000`.
+
+Register once from `/register`, then log back in from `/login` with the same email and password.
 
 ## Environment simulator
 
@@ -57,6 +61,15 @@ http://10.27.223.43:5000/upload_image?seed_count=30
 ```
 
 The app saves original captures in `static/captures/`, analyzed overlays in `static/overlays/`, and growth logs in `growth_logs.db`.
+
+## Sprout food and care intelligence
+
+After logging in, upload a clear photo in the `Sprout Food & Care Intelligence` section. SonicSeed saves the image in `static/sprout_uploads/`, estimates the likely sprout type, and returns:
+
+- Growing and care steps
+- Harvest timing
+- Indian meal ideas such as chaat, cheela, usal, thepla, sundal, khichdi, and raita-style bowls
+- Nutrition benefits
 
 ## Timelapse
 

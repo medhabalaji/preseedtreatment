@@ -1,31 +1,89 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Chickpea Germination Intelligence</title>
+    <title>SonicSeed</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
       :root {
+        color-scheme: light;
         --forest: #2d6a4f;
         --forest-soft: #40916c;
-        --surface: #ffffff;
+        --moss: #74c69d;
+        --sun: #e9c46a;
+        --water: #56cfe1;
+        --surface: rgba(255, 255, 255, 0.78);
         --page: #f8f9fa;
         --line: #e8ecef;
         --ink: #385348;
         --muted: #6c757d;
         --leaf: #e7f3ed;
         --mist: #f4f8f6;
+        --glass: rgba(255, 255, 255, 0.58);
+        --glass-strong: rgba(255, 255, 255, 0.84);
+        --glow: rgba(86, 207, 225, 0.24);
+      }
+
+      body[data-theme="dark"] {
+        color-scheme: dark;
+        --forest: #7bd7a4;
+        --forest-soft: #95e2b8;
+        --moss: #52b788;
+        --sun: #f4d35e;
+        --water: #48cae4;
+        --surface: #17211d;
+        --page: #0d1411;
+        --line: #2a3b33;
+        --ink: #e7f2ed;
+        --muted: #a8b8b0;
+        --leaf: #20382e;
+        --mist: #121c18;
+        --glass: rgba(23, 33, 29, 0.62);
+        --glass-strong: rgba(23, 33, 29, 0.84);
+        --glow: rgba(123, 215, 164, 0.18);
       }
 
       body {
-        background: var(--page);
+        background:
+          url("data:image/svg+xml,%3Csvg width='180' height='140' viewBox='0 0 180 140' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23e9c46a' stroke-opacity='.18' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cellipse cx='42' cy='96' rx='13' ry='10' transform='rotate(-24 42 96)'/%3E%3Cpath d='M53 90c19-22 42-30 68-25'/%3E%3Cpath d='M94 68c-10-14-10-28 0-42 12 14 12 28 0 42Z'/%3E%3Cpath d='M112 65c15-11 29-13 43-4-14 12-28 14-43 4Z'/%3E%3C/g%3E%3C/svg%3E") 8% 22% / 180px 140px repeat,
+          url("data:image/svg+xml,%3Csvg width='160' height='160' viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%2356cfe1' stroke-opacity='.13' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M80 126C64 101 58 78 63 56c4-18 15-32 33-43 4 22 1 41-9 57-8 13-21 22-39 27'/%3E%3Cpath d='M83 124c21-21 35-45 42-72'/%3E%3Cpath d='M112 76c18 3 31 13 39 30-20 1-33-9-39-30Z'/%3E%3C/g%3E%3C/svg%3E") right 12% top 36% / 160px 160px repeat-y,
+          linear-gradient(135deg, rgba(64, 145, 108, 0.08), transparent 28%),
+          linear-gradient(315deg, rgba(216, 243, 220, 0.45), transparent 32%),
+          var(--page);
         color: var(--ink);
         font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       }
 
+      body::before {
+        background-image:
+          url("data:image/svg+xml,%3Csvg width='220' height='220' viewBox='0 0 220 220' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%2340916c' stroke-opacity='.16' stroke-width='4' stroke-linecap='round'%3E%3Cpath d='M54 170c40-44 68-89 72-135'/%3E%3Cpath d='M103 70c-33-7-55-25-64-53 35 1 58 20 64 53Z'/%3E%3Cpath d='M118 95c38-7 64-31 70-67-40 4-64 29-70 67Z'/%3E%3Cpath d='M77 151c-25-3-44-17-52-40 28-1 46 14 52 40Z'/%3E%3C/g%3E%3C/svg%3E"),
+          url("data:image/svg+xml,%3Csvg width='260' height='180' viewBox='0 0 260 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%232d6a4f' stroke-opacity='.11' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M28 142c35-41 78-59 130-54 35 4 58 19 74 46'/%3E%3Cpath d='M91 96c-26-19-38-43-36-72 31 9 49 33 36 72Z'/%3E%3Cpath d='M158 88c26-24 54-33 84-25-18 31-46 39-84 25Z'/%3E%3C/g%3E%3C/svg%3E");
+        content: "";
+        inset: 0;
+        opacity: 0.55;
+        pointer-events: none;
+        position: fixed;
+        z-index: -1;
+      }
+
       code {
         color: var(--forest);
+      }
+
+      body[data-theme="dark"] .text-secondary,
+      body[data-theme="dark"] .small.text-secondary {
+        color: var(--muted) !important;
+      }
+
+      body[data-theme="dark"] .form-control {
+        background: #101815;
+        border-color: var(--line);
+        color: var(--ink);
+      }
+
+      body[data-theme="dark"] .topbar {
+        background: rgba(23, 33, 29, 0.76);
       }
 
       .app-shell {
@@ -36,16 +94,22 @@
 
       .topbar {
         align-items: center;
-        border-bottom: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: 0 18px 45px rgba(33, 76, 57, 0.08);
+        backdrop-filter: blur(14px);
         display: flex;
         gap: 16px;
         justify-content: space-between;
         margin-bottom: 24px;
-        padding-bottom: 18px;
+        padding: 16px;
       }
 
       .brand-mark {
-        background: var(--forest);
+        background:
+          url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 31V13' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M20 17c-7 0-11-4-11-10 7 0 11 4 11 10Z' fill='%23b7e4c7'/%3E%3Cpath d='M20 20c8 0 12-5 12-12-8 0-12 5-12 12Z' fill='%2395d5b2'/%3E%3Cpath d='M12 31c3-4 13-4 16 0' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") center / 30px 30px no-repeat,
+          var(--forest);
         border-radius: 8px;
         height: 40px;
         width: 40px;
@@ -61,17 +125,66 @@
       .panel,
       .metric-card,
       .feature-card,
+      .insight-card,
       .gallery-card,
       .empty-state {
-        background: var(--surface);
-        border: 1px solid var(--line);
+        background:
+          linear-gradient(145deg, rgba(255, 255, 255, 0.36), transparent 42%),
+          var(--glass-strong);
+        border: 1px solid rgba(216, 234, 223, 0.78);
         border-radius: 8px;
+        backdrop-filter: blur(18px) saturate(1.22);
       }
 
       .panel,
       .metric-card,
-      .feature-card {
+      .feature-card,
+      .insight-card {
         padding: 20px;
+      }
+
+      .panel,
+      .metric-card,
+      .feature-card,
+      .insight-card,
+      .gallery-card {
+        box-shadow: 0 14px 36px rgba(33, 76, 57, 0.06);
+        overflow: hidden;
+        position: relative;
+        transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+      }
+
+      .panel::after,
+      .metric-card::after,
+      .feature-card::after,
+      .insight-card::after {
+        background:
+          url("data:image/svg+xml,%3Csvg width='150' height='150' viewBox='0 0 150 150' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%2340916c' stroke-opacity='.18' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M75 128V43'/%3E%3Cpath d='M75 66c-27-2-43-18-47-43 29 1 44 17 47 43Z'/%3E%3Cpath d='M78 83c31-3 50-23 54-52-32 2-51 22-54 52Z'/%3E%3C/g%3E%3C/svg%3E")
+          center / contain no-repeat;
+        bottom: -42px;
+        content: "";
+        height: 132px;
+        opacity: 0.72;
+        pointer-events: none;
+        position: absolute;
+        right: -38px;
+        width: 132px;
+      }
+
+      .panel > *,
+      .metric-card > *,
+      .feature-card > *,
+      .insight-card > * {
+        position: relative;
+        z-index: 1;
+      }
+
+      .metric-card:hover,
+      .feature-card:hover,
+      .gallery-card:hover {
+        border-color: #cfe8d9;
+        box-shadow: 0 18px 46px rgba(33, 76, 57, 0.1);
+        transform: translateY(-2px);
       }
 
       .metric-label {
@@ -79,6 +192,29 @@
         font-size: 0.82rem;
         font-weight: 650;
         text-transform: uppercase;
+      }
+
+      .metric-heading {
+        align-items: center;
+        display: flex;
+        gap: 10px;
+      }
+
+      .metric-icon {
+        align-items: center;
+        background: var(--leaf);
+        border: 1px solid #d8eadf;
+        border-radius: 8px;
+        color: var(--forest);
+        display: inline-flex;
+        height: 38px;
+        justify-content: center;
+        width: 38px;
+      }
+
+      .metric-icon svg {
+        height: 22px;
+        width: 22px;
       }
 
       .metric-value {
@@ -175,6 +311,13 @@
         border: 1px solid #d8eadf;
         border-radius: 8px;
         padding: 12px 14px;
+        position: relative;
+        transition: background 160ms ease, transform 160ms ease;
+      }
+
+      .comparison-row:hover {
+        background: var(--leaf);
+        transform: translateY(-1px);
       }
 
       .gallery-card {
@@ -227,6 +370,476 @@
         margin-top: 14px;
         width: 100%;
       }
+
+      .workspace-tabs {
+        background:
+          radial-gradient(circle at 18% 12%, var(--glow), transparent 34%),
+          linear-gradient(135deg, rgba(45, 106, 79, 0.14), transparent 42%),
+          var(--glass);
+        border: 1px solid rgba(216, 234, 223, 0.82);
+        border-radius: 8px;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 18px 46px rgba(33, 76, 57, 0.08);
+        backdrop-filter: blur(18px);
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        padding: 8px;
+      }
+
+      .workspace-tab {
+        align-items: center;
+        background: transparent;
+        border: 1px solid transparent;
+        border-radius: 6px;
+        color: var(--muted);
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        min-height: 62px;
+        padding: 10px 14px;
+        position: relative;
+        transition: background 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+      }
+
+      .workspace-tab::after {
+        background: linear-gradient(90deg, transparent, var(--moss), transparent);
+        bottom: 4px;
+        content: "";
+        height: 2px;
+        left: 18%;
+        opacity: 0;
+        position: absolute;
+        right: 18%;
+        transform: scaleX(0.3);
+        transition: opacity 160ms ease, transform 160ms ease;
+      }
+
+      .workspace-tab:hover {
+        color: var(--forest);
+        transform: translateY(-1px);
+      }
+
+      .workspace-tab.is-active {
+        background:
+          linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(231, 243, 237, 0.68)),
+          var(--surface);
+        border-color: #cfe8d9;
+        box-shadow: 0 12px 28px rgba(33, 76, 57, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        color: var(--forest);
+      }
+
+      .workspace-tab.is-active::after {
+        opacity: 1;
+        transform: scaleX(1);
+      }
+
+      .workspace-tab svg {
+        flex: 0 0 auto;
+        height: 26px;
+        width: 26px;
+      }
+
+      .tab-panel {
+        display: none;
+      }
+
+      .tab-panel.is-active {
+        animation: panelIn 220ms ease-out;
+        display: block;
+      }
+
+      @keyframes panelIn {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .seed-detection-layout {
+        display: grid;
+        gap: 18px;
+        grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1.15fr);
+      }
+
+      .seed-detection-stack {
+        display: grid;
+        gap: 16px;
+      }
+
+      .seed-hero {
+        background:
+          url("data:image/svg+xml,%3Csvg width='180' height='120' viewBox='0 0 180 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%232d6a4f' stroke-opacity='.18' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M30 95c35-31 72-42 112-32'/%3E%3Cpath d='M78 69c-18-10-27-26-25-47 22 7 31 23 25 47Z'/%3E%3Cpath d='M104 62c20-16 41-21 62-13-14 21-34 25-62 13Z'/%3E%3C/g%3E%3C/svg%3E") right -16px bottom -12px / 180px 120px no-repeat,
+          radial-gradient(circle at 18% 18%, rgba(64, 145, 108, 0.20), transparent 28%),
+          radial-gradient(circle at 82% 16%, rgba(86, 207, 225, 0.20), transparent 24%),
+          linear-gradient(135deg, rgba(231, 243, 237, 0.86), rgba(255, 255, 255, 0.62));
+        border: 1px solid rgba(216, 234, 223, 0.86);
+        border-radius: 8px;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86), 0 24px 58px rgba(33, 76, 57, 0.08);
+        backdrop-filter: blur(18px);
+        min-height: 100%;
+        overflow: hidden;
+        padding: 22px;
+        position: relative;
+      }
+
+      .seed-hero::before,
+      .seed-hero::after {
+        border: 1px solid rgba(64, 145, 108, 0.18);
+        border-radius: 999px;
+        content: "";
+        pointer-events: none;
+        position: absolute;
+      }
+
+      .seed-hero::before {
+        height: 84px;
+        left: -28px;
+        top: 28px;
+        width: 84px;
+      }
+
+      .seed-hero::after {
+        bottom: 22px;
+        height: 46px;
+        right: 22px;
+        width: 46px;
+      }
+
+      .analysis-console {
+        background:
+          linear-gradient(145deg, rgba(255, 255, 255, 0.48), rgba(244, 248, 246, 0.34)),
+          var(--glass);
+        border: 1px solid rgba(216, 234, 223, 0.86);
+        border-radius: 8px;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86), 0 18px 42px rgba(33, 76, 57, 0.07);
+        backdrop-filter: blur(18px);
+        padding: 16px;
+      }
+
+      .seed-mode-chip {
+        align-items: center;
+        background: rgba(231, 243, 237, 0.78);
+        border: 1px solid #d8eadf;
+        border-radius: 999px;
+        color: var(--forest);
+        display: inline-flex;
+        font-size: 0.78rem;
+        font-weight: 750;
+        gap: 7px;
+        padding: 6px 10px;
+      }
+
+      .seed-mode-chip svg {
+        display: block;
+        flex: 0 0 auto;
+        height: 16px;
+        margin: 0;
+        max-width: none;
+        width: 16px;
+      }
+
+      .sensor-graphic {
+        align-items: center;
+        background: linear-gradient(135deg, var(--leaf), var(--mist));
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        display: flex;
+        gap: 14px;
+        overflow: hidden;
+        padding: 14px;
+      }
+
+      .sensor-graphic svg {
+        flex: 0 0 auto;
+        height: 72px;
+        width: 96px;
+      }
+
+      .sensor-graphic .wave-line {
+        animation: waveShift 2.2s ease-in-out infinite alternate;
+      }
+
+      @keyframes waveShift {
+        to {
+          transform: translateY(-4px);
+        }
+      }
+
+      .seed-hero > svg {
+        display: block;
+        height: auto;
+        margin: 0 auto 18px;
+        max-width: 360px;
+        width: 100%;
+      }
+
+      .seed-hero .sprout-line {
+        animation: drawLine 2.4s ease-in-out infinite alternate;
+        stroke-dasharray: 280;
+        stroke-dashoffset: 42;
+      }
+
+      .seed-hero .seed-dot {
+        animation: seedFloat 3.2s ease-in-out infinite;
+        transform-origin: center;
+      }
+
+      .seed-hero .seed-dot:nth-of-type(2) {
+        animation-delay: 0.35s;
+      }
+
+      .seed-hero .seed-dot:nth-of-type(3) {
+        animation-delay: 0.7s;
+      }
+
+      .seed-results {
+        grid-column: 1 / -1;
+      }
+
+      @keyframes drawLine {
+        to {
+          stroke-dashoffset: 0;
+        }
+      }
+
+      @keyframes seedFloat {
+        0%, 100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-5px);
+        }
+      }
+
+      .user-pill {
+        align-items: center;
+        display: flex;
+        gap: 8px;
+      }
+
+      .sprout-preview {
+        background:
+          url("data:image/svg+xml,%3Csvg width='96' height='96' viewBox='0 0 96 96' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%2340916c' stroke-opacity='.18' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M48 78V28'/%3E%3Cpath d='M48 43c-16-1-26-11-29-26 17 1 27 10 29 26Z'/%3E%3Cpath d='M52 54c18-3 29-14 32-31-19 1-30 13-32 31Z'/%3E%3C/g%3E%3C/svg%3E") center / 96px 96px no-repeat,
+          rgba(238, 242, 240, 0.72);
+        border: 1px solid rgba(216, 234, 223, 0.9);
+        border-radius: 8px;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        display: block;
+        min-height: 260px;
+        object-fit: cover;
+        width: 100%;
+      }
+
+      .sprout-preview.is-empty {
+        align-items: center;
+        color: var(--muted);
+        display: flex;
+        justify-content: center;
+        padding: 28px;
+        text-align: center;
+      }
+
+      .sprout-preview img {
+        border-radius: 8px;
+        display: block;
+        height: 100%;
+        min-height: 260px;
+        object-fit: cover;
+        width: 100%;
+      }
+
+      .insight-list {
+        margin: 0;
+        padding-left: 1.1rem;
+      }
+
+      .insight-list li {
+        margin-bottom: 0.4rem;
+      }
+
+      .analysis-chip {
+        background: rgba(231, 243, 237, 0.82);
+        border: 1px solid #d8eadf;
+        border-radius: 999px;
+        color: var(--forest);
+        display: inline-flex;
+        font-weight: 700;
+        padding: 6px 12px;
+      }
+
+      .report-actions {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .section-heading {
+        align-items: center;
+        display: flex;
+        gap: 12px;
+      }
+
+      .section-graphic {
+        align-items: center;
+        background: var(--leaf);
+        border: 1px solid #d8eadf;
+        border-radius: 8px;
+        color: var(--forest);
+        display: inline-flex;
+        height: 44px;
+        justify-content: center;
+        width: 44px;
+      }
+
+      .section-graphic svg {
+        height: 26px;
+        width: 26px;
+      }
+
+      .choice-group {
+        background: rgba(244, 248, 246, 0.7);
+        border: 1px solid rgba(216, 234, 223, 0.86);
+        border-radius: 8px;
+        display: grid;
+        gap: 8px;
+        grid-template-columns: 1fr 1fr;
+        padding: 6px;
+      }
+
+      .choice-group input {
+        position: absolute;
+        opacity: 0;
+      }
+
+      .choice-group > div {
+        position: relative;
+      }
+
+      .choice-group label {
+        border-radius: 6px;
+        color: var(--muted);
+        cursor: pointer;
+        font-weight: 700;
+        margin: 0;
+        padding: 9px 10px;
+        text-align: center;
+      }
+
+      .choice-group input:checked + label {
+        background: rgba(255, 255, 255, 0.86);
+        color: var(--forest);
+        box-shadow: 0 0 0 1px var(--line), 0 10px 22px rgba(33, 76, 57, 0.08);
+      }
+
+      .report-shell {
+        background:
+          url("data:image/svg+xml,%3Csvg width='140' height='110' viewBox='0 0 140 110' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%2356cfe1' stroke-opacity='.16' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 86c28-28 59-39 94-34'/%3E%3Cpath d='M63 59c-13-12-17-27-11-44 18 10 22 25 11 44Z'/%3E%3Cpath d='M79 55c19-12 37-14 55-5-18 14-36 16-55 5Z'/%3E%3C/g%3E%3C/svg%3E") right 18px top 18px / 140px 110px no-repeat,
+          linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(231, 243, 237, 0.48)),
+          var(--glass);
+        border-color: rgba(216, 234, 223, 0.95);
+        box-shadow: 0 28px 72px rgba(33, 76, 57, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+      }
+
+      .sprout-placeholder {
+        align-items: center;
+        aspect-ratio: 4 / 3;
+        background: var(--leaf);
+        color: var(--forest);
+        display: flex;
+        font-weight: 750;
+        justify-content: center;
+        text-align: center;
+      }
+
+      .recent-monitoring {
+        position: relative;
+      }
+
+      .recent-monitoring::before {
+        background:
+          url("data:image/svg+xml,%3Csvg width='128' height='96' viewBox='0 0 128 96' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%2340916c' stroke-opacity='.22' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cellipse cx='24' cy='70' rx='12' ry='9' transform='rotate(-18 24 70)'/%3E%3Cpath d='M36 64c19-25 40-37 64-37'/%3E%3Cpath d='M71 32c-9-13-9-24 1-35 11 12 10 24-1 35Z'/%3E%3Cpath d='M86 29c16-8 29-8 41 1-14 10-28 10-41-1Z'/%3E%3C/g%3E%3C/svg%3E")
+          center / contain no-repeat;
+        content: "";
+        height: 96px;
+        opacity: 0.75;
+        pointer-events: none;
+        position: absolute;
+        right: 14px;
+        top: -26px;
+        width: 128px;
+        z-index: 0;
+      }
+
+      .recent-monitoring > * {
+        position: relative;
+        z-index: 1;
+      }
+
+      @media (max-width: 991.98px) {
+        .workspace-tabs,
+        .seed-detection-layout {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+
+      @media print {
+        body.print-sprout-report {
+          background: #ffffff !important;
+        }
+
+        body.print-sprout-report * {
+          visibility: hidden !important;
+        }
+
+        body.print-sprout-report #sproutResult,
+        body.print-sprout-report #sproutResult * {
+          color: #243b31 !important;
+          visibility: visible !important;
+        }
+
+        body.print-sprout-report #sproutResult {
+          border: 0 !important;
+          box-shadow: none !important;
+          left: 0;
+          padding: 0;
+          position: absolute;
+          top: 0;
+          width: 100%;
+        }
+
+        body.print-sprout-report #downloadSproutBtn,
+        body.print-sprout-report .analysis-chip {
+          display: none !important;
+        }
+
+        body.print-sprout-report .comparison-row {
+          break-inside: avoid;
+          border-color: #cfd8d2 !important;
+        }
+      }
+
+      body[data-theme="dark"] .analysis-chip,
+      body[data-theme="dark"] .comparison-row,
+      body[data-theme="dark"] .endpoint-box,
+      body[data-theme="dark"] .signal-panel {
+        border-color: var(--line);
+      }
     </style>
   </head>
   <body>
@@ -235,17 +848,29 @@
         <div class="d-flex align-items-center gap-3">
           <div class="brand-mark" aria-hidden="true"></div>
           <div>
-            <h1 class="brand-title h3 mb-1">Chickpea Germination Intelligence</h1>
-            <p class="text-secondary mb-0">Environment suitability, moisture stress, and optional seed image monitoring</p>
+            <h1 class="brand-title h3 mb-1">SonicSeed</h1>
+            <p class="text-secondary mb-0">Sprout monitoring, environment sensing, and food guidance</p>
           </div>
         </div>
-        <span class="badge rounded-pill badge-soft px-3 py-2">Cicer arietinum</span>
+        <div class="d-flex flex-wrap align-items-center justify-content-end gap-2">
+          <span class="badge rounded-pill badge-soft px-3 py-2">SonicSeed Lab</span>
+          <button class="btn btn-outline-forest btn-sm" id="themeToggle" type="button" aria-pressed="false">Dark mode</button>
+          <span class="badge rounded-pill badge-soft px-3 py-2 user-pill">{{ current_user.name if current_user else "Guest" }}</span>
+          <form action="{{ url_for('logout') }}" method="post" class="mb-0">
+            <button class="btn btn-outline-forest btn-sm" type="submit">Log Out</button>
+          </form>
+        </div>
       </header>
 
       <section class="row g-3 mb-4">
         <div class="col-lg-3 col-md-6">
           <div class="metric-card h-100">
-            <div class="metric-label mb-2">Germination Suitability</div>
+            <div class="metric-heading mb-2">
+              <span class="metric-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 21V9" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/><path d="M12 11c-4 0-7-3-7-7 4 0 7 3 7 7Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2"/><path d="M12 14c5 0 8-3 8-8-5 0-8 3-8 8Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2"/></svg>
+              </span>
+              <div class="metric-label">Germination Suitability</div>
+            </div>
             <div class="metric-value" id="suitabilityValue">{{ "%.1f"|format(environment.germination_suitability) }}%</div>
             <div class="progress mt-3" role="progressbar" aria-label="Germination suitability">
               <div class="progress-bar" id="suitabilityBar" style="width: {{ environment.germination_suitability }}%"></div>
@@ -254,21 +879,36 @@
         </div>
         <div class="col-lg-3 col-md-6">
           <div class="metric-card h-100">
-            <div class="metric-label mb-2">Temperature</div>
-            <div class="metric-value" id="temperatureValue">{{ "%.1f"|format(environment.temperature_c) }}°C</div>
+            <div class="metric-heading mb-2">
+              <span class="metric-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M14 14.76V5a2 2 0 0 0-4 0v9.76a4 4 0 1 0 4 0Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 17h.01" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="3"/></svg>
+              </span>
+              <div class="metric-label">Temperature</div>
+            </div>
+            <div class="metric-value" id="temperatureValue">{{ "%.1f"|format(environment.temperature_c) }}Â°C</div>
             <div class="text-secondary mt-2">Score: <span id="temperatureScore">{{ "%.1f"|format(environment.temperature_score) }}</span>/100</div>
           </div>
         </div>
         <div class="col-lg-3 col-md-6">
           <div class="metric-card h-100">
-            <div class="metric-label mb-2">Relative Humidity</div>
+            <div class="metric-heading mb-2">
+              <span class="metric-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 3s6 6.4 6 11a6 6 0 0 1-12 0c0-4.6 6-11 6-11Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2"/><path d="M9 15c.7 1.3 1.7 2 3 2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/></svg>
+              </span>
+              <div class="metric-label">Relative Humidity</div>
+            </div>
             <div class="metric-value" id="humidityValue">{{ "%.1f"|format(environment.humidity_percent) }}%</div>
             <div class="text-secondary mt-2">Moisture stress: <span id="moistureStress">{{ "%.1f"|format(environment.moisture_stress) }}</span>%</div>
           </div>
         </div>
         <div class="col-lg-3 col-md-6">
           <div class="metric-card h-100">
-            <div class="metric-label mb-2">VPD</div>
+            <div class="metric-heading mb-2">
+              <span class="metric-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M4 14c3-5 7 5 10 0s4-5 6-2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/><path d="M4 19c3-5 7 5 10 0s4-5 6-2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/><path d="M4 9c3-5 7 5 10 0s4-5 6-2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/></svg>
+              </span>
+              <div class="metric-label">VPD</div>
+            </div>
             <div class="metric-value" id="vpdValue">{{ "%.2f"|format(environment.vapor_pressure_deficit) }}</div>
             <div class="text-secondary mt-2">kPa drying demand</div>
           </div>
@@ -283,11 +923,24 @@
           </div>
           <span class="badge rounded-pill badge-soft px-3 py-2"><span class="sensor-dot"></span><span id="sensorState">Sensor stream active</span></span>
         </div>
+        <div class="sensor-graphic mb-3">
+          <svg viewBox="0 0 140 96" aria-hidden="true">
+            <rect x="14" y="18" width="112" height="60" rx="12" fill="#e7f3ed" stroke="#40916c" stroke-width="4"/>
+            <path class="wave-line" d="M28 55c12-17 24 17 36 0s24-17 36 0" fill="none" stroke="#2d6a4f" stroke-linecap="round" stroke-width="5"/>
+            <path d="M46 34h48" fill="none" stroke="#74c69d" stroke-linecap="round" stroke-width="5"/>
+            <circle cx="110" cy="34" r="7" fill="#e9c46a"/>
+            <path d="M46 78v10m48-10v10" fill="none" stroke="#40916c" stroke-linecap="round" stroke-width="4"/>
+          </svg>
+          <div>
+            <div class="metric-label mb-1">Live Signal Map</div>
+            <div class="text-secondary">Temperature, humidity, and drying demand are blended into the suitability score above.</div>
+          </div>
+        </div>
         <div class="row g-3">
           <div class="col-md-4">
             <div class="comparison-row">
               <div class="metric-label">Temperature Window</div>
-              <div class="h5 mb-0">Best around 22-28°C</div>
+              <div class="h5 mb-0">Best around 22-28Â°C</div>
             </div>
           </div>
           <div class="col-md-4">
@@ -306,10 +959,191 @@
         <div class="text-secondary mt-3">Last sensor update: <span id="sensorTimestamp">{{ environment.timestamp.strftime("%H:%M:%S") }}</span></div>
       </section>
 
-      <section class="row g-3 mb-4">
+      <nav class="workspace-tabs mb-4" aria-label="Dashboard sections">
+        <button class="workspace-tab is-active" type="button" data-tab-target="monitoringPanel" aria-selected="true">
+          <svg viewBox="0 0 32 32" aria-hidden="true">
+            <path d="M5 24h22" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/>
+            <path d="M8 20v-6m8 6V8m8 12v-9" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/>
+            <path d="M7 10c5 0 8-2 10-6 2 4 5 6 10 6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/>
+          </svg>
+          <span>
+            <span class="d-block fw-bold">Germination Monitor</span>
+            <span class="d-block small">Progress, camera, ESP32, timelapse</span>
+          </span>
+        </button>
+        <button class="workspace-tab" type="button" data-tab-target="seedDetectionPanel" aria-selected="false">
+          <svg viewBox="0 0 32 32" aria-hidden="true">
+            <path d="M16 27V12" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/>
+            <path d="M16 14c-5-1-8-4-8-8 5 0 8 3 8 8Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2"/>
+            <path d="M16 18c6 0 9-4 9-9-6 0-9 4-9 9Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2"/>
+            <path d="M9 27c2-3 12-3 14 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/>
+          </svg>
+          <span>
+            <span class="d-block fw-bold">Seed Detection</span>
+            <span class="d-block small">Name or image based care guide</span>
+          </span>
+        </button>
+      </nav>
+
+      <section class="tab-panel" id="seedDetectionPanel">
+      <section class="panel report-shell">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+          <div>
+            <span class="seed-mode-chip mb-2">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V9" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/><path d="M12 11c-4 0-7-3-7-7 4 0 7 3 7 7Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2"/><path d="M12 14c5 0 8-3 8-8-5 0-8 3-8 8Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2"/></svg>
+              Channa seed analyser
+            </span>
+            <h2 class="section-title h5 mb-1">Seed Image & Manual Analyser</h2>
+            <p class="text-secondary mb-0">Type a seed name or upload a sprout photo, then get growing, harvest, Indian meal, and nutrition guidance.</p>
+          </div>
+        </div>
+        <div class="seed-detection-layout">
+          <div class="seed-hero">
+            <svg viewBox="0 0 420 280" role="img" aria-label="Animated sprout illustration">
+              <defs>
+                <linearGradient id="sproutGradient" x1="0" x2="1" y1="0" y2="1">
+                  <stop offset="0" stop-color="#40916c"/>
+                  <stop offset="1" stop-color="#2d6a4f"/>
+                </linearGradient>
+              </defs>
+              <path d="M68 220c70 22 212 22 284 0" fill="none" stroke="#cfe8d9" stroke-linecap="round" stroke-width="18"/>
+              <ellipse class="seed-dot" cx="122" cy="216" fill="#d7a85b" rx="34" ry="19" transform="rotate(-12 122 216)"/>
+              <ellipse class="seed-dot" cx="214" cy="222" fill="#c89145" rx="38" ry="20" transform="rotate(8 214 222)"/>
+              <ellipse class="seed-dot" cx="298" cy="215" fill="#e0b96f" rx="32" ry="18" transform="rotate(-8 298 215)"/>
+              <path class="sprout-line" d="M212 212C203 166 210 118 230 86" fill="none" stroke="url(#sproutGradient)" stroke-linecap="round" stroke-width="10"/>
+              <path class="sprout-line" d="M226 103c-38-4-70-27-78-65 40 2 68 26 78 65Z" fill="#b7e4c7" stroke="#40916c" stroke-linejoin="round" stroke-width="5"/>
+              <path class="sprout-line" d="M229 91c44-9 76-37 82-77-44 4-75 33-82 77Z" fill="#95d5b2" stroke="#2d6a4f" stroke-linejoin="round" stroke-width="5"/>
+              <path d="M144 246h144" fill="none" stroke="#2d6a4f" stroke-linecap="round" stroke-width="5" opacity="0.5"/>
+            </svg>
+            <div class="d-flex flex-wrap gap-2 mb-3">
+              <span class="seed-mode-chip">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5v14" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/></svg>
+                Manual entry
+              </span>
+              <span class="seed-mode-chip">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="6" width="16" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+                Image analysis
+              </span>
+              <span class="seed-mode-chip">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2"/><path d="M14 3v5h5M10 14h6M10 18h6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/></svg>
+                PDF report
+              </span>
+            </div>
+            <div class="metric-label mb-2">Detection Mode</div>
+            <p class="text-secondary mb-0">Both paths feed the same care, harvest, food, and nutrition guidance.</p>
+          </div>
+          <div class="analysis-console">
+            <div id="sproutPreview" class="sprout-preview is-empty">Choose a clear sprout photo with seeds and shoots visible.</div>
+            <div class="choice-group mt-3" role="radiogroup" aria-label="Sprout identification method">
+              <div>
+                <input type="radio" id="identifyByName" name="identificationMode" value="name" checked>
+                <label for="identifyByName">Enter name</label>
+              </div>
+              <div>
+                <input type="radio" id="identifyByImage" name="identificationMode" value="image">
+                <label for="identifyByImage">Analyze image</label>
+              </div>
+            </div>
+            <div id="sproutNamePanel" class="mt-3">
+              <label for="seedName" class="form-label">Seed or sprout name</label>
+              <input class="form-control mb-3" id="seedName" type="text" placeholder="Moong, chana, methi, masoor, rai">
+            </div>
+            <div id="sproutImagePanel" class="mt-3 d-none">
+              <label for="sproutImage" class="form-label">Sprout photo</label>
+              <input class="form-control mb-3" id="sproutImage" type="file" accept="image/jpeg,image/png,image/webp">
+            </div>
+            <button class="btn btn-forest w-100" id="sproutAnalyzeBtn" type="button">Get Sprout Guidance</button>
+            <div class="status-line mt-3" id="sproutStatus"></div>
+          </div>
+          <div class="seed-results">
+            <div id="sproutResult" class="insight-card h-100">
+              <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                <div>
+                  <div class="metric-label">Likely Sprout</div>
+                  <h3 class="section-title h4 mb-0" id="sproutName">Awaiting seed</h3>
+                </div>
+                <div class="report-actions">
+                  <span class="analysis-chip" id="sproutConfidence">0% confidence</span>
+                  <button class="btn btn-outline-forest btn-sm" id="downloadSproutBtn" type="button" disabled>
+                    <svg viewBox="0 0 24 24" aria-hidden="true" width="16" height="16">
+                      <path d="M12 3v12" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/>
+                      <path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                      <path d="M5 20h14" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/>
+                    </svg>
+                    Download PDF
+                  </button>
+                </div>
+              </div>
+              <p class="text-secondary" id="sproutVisualSummary">Enter a known seed name or upload a clear image to generate care, harvest, Indian food, and nutrition guidance.</p>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="comparison-row h-100">
+                    <div class="metric-label mb-2">Care & Growing</div>
+                    <ul class="insight-list" id="sproutCare"></ul>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="comparison-row h-100">
+                    <div class="metric-label mb-2">Harvest</div>
+                    <ul class="insight-list" id="sproutHarvest"></ul>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="comparison-row h-100">
+                    <div class="metric-label mb-2">Indian Food Ideas</div>
+                    <ul class="insight-list" id="sproutFood"></ul>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="comparison-row h-100">
+                    <div class="metric-label mb-2">Nutrition</div>
+                    <ul class="insight-list" id="sproutNutrition"></ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <h3 class="section-title h6 mb-0">Saved Sprout Analyses</h3>
+            <span class="text-secondary small" id="sproutHistoryCount">{{ sprout_analyses|length }} saved</span>
+          </div>
+          <div class="row g-3" id="sproutHistoryGrid">
+            {% for analysis in sprout_analyses %}
+              <div class="col-md-6 col-xl-4">
+                <article class="gallery-card h-100">
+                  {% if analysis.image_path %}
+                    <img src="{{ url_for('static', filename=analysis.image_path.replace('static/', '')) }}" alt="{{ analysis.sprout_name }} analysis">
+                  {% else %}
+                    <div class="sprout-placeholder">{{ analysis.sprout_name }}</div>
+                  {% endif %}
+                  <div class="gallery-meta">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <span class="badge rounded-pill badge-soft">{{ analysis.sprout_name }}</span>
+                      <span class="text-secondary small">{{ "%.0f"|format(analysis.confidence) }}%</span>
+                    </div>
+                    <div class="text-secondary small">{{ analysis.visual_summary }}</div>
+                  </div>
+                </article>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+      </section>
+
+      <section class="tab-panel is-active" id="monitoringPanel">
+      <section class="row g-3 monitoring-progress">
         <div class="col-lg-6">
           <div class="feature-card h-100">
-            <h2 class="section-title h5 mb-3">Chickpea Germination Progress</h2>
+            <div class="section-heading mb-3">
+              <span class="section-graphic" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M4 18h16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/><path d="M7 15v-5m5 5V6m5 9V9" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/><path d="M5 8c4 0 6-2 7-5 1 3 3 5 7 5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/></svg>
+              </span>
+              <h2 class="section-title h5 mb-0">Chickpea Germination Progress</h2>
+            </div>
             <div class="row g-3">
               <div class="col-sm-6">
                 <div class="comparison-row">
@@ -343,7 +1177,12 @@
         <div class="col-lg-6">
           <div class="feature-card h-100">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-              <h2 class="section-title h5 mb-0">Seed Image Monitoring Feature</h2>
+              <div class="section-heading">
+                <span class="section-graphic" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 6l1.5-2h3L15 6" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+                </span>
+                <h2 class="section-title h5 mb-0">Seed Image Monitoring Feature</h2>
+              </div>
               <span class="badge rounded-pill badge-soft" id="cameraState">Idle</span>
             </div>
             <div class="row g-3">
@@ -376,11 +1215,16 @@
         </div>
       </section>
 
-      <section class="row g-3 mb-4">
+      <section class="row g-3 monitoring-tools">
         <div class="col-lg-6">
           <div class="panel h-100">
             <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
-              <h2 class="section-title h5 mb-0">ESP32-CAM Upload</h2>
+              <div class="section-heading">
+                <span class="section-graphic" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 2v3m6-3v3M9 19v3m6-3v3M2 9h3m-3 6h3m14-6h3m-3 6h3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+                </span>
+                <h2 class="section-title h5 mb-0">ESP32-CAM Upload</h2>
+              </div>
               <button class="btn btn-outline-forest btn-sm" id="clearPhotosBtn" type="button">Clear Photos</button>
             </div>
             <label class="form-label">Raw JPEG endpoint</label>
@@ -395,7 +1239,12 @@
           <div class="panel h-100">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
               <div>
-                <h2 class="section-title h5 mb-1">Timelapse Export</h2>
+                <div class="section-heading mb-2">
+                  <span class="section-graphic" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 5v14M16 5v14M4 10h16M4 14h16" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+                  </span>
+                  <h2 class="section-title h5 mb-0">Timelapse Export</h2>
+                </div>
                 <p class="text-secondary mb-0">Build an MP4 from saved chickpea overlay frames.</p>
               </div>
               <div class="d-flex flex-wrap gap-2">
@@ -410,7 +1259,7 @@
         </div>
       </section>
 
-      <section>
+      <section class="recent-monitoring">
         <div class="d-flex align-items-center justify-content-between mb-3">
           <h2 class="section-title h5 mb-0">Recent Chickpea Image Analyses</h2>
           <span class="text-secondary small" id="galleryCount">{{ logs|length }} shown</span>
@@ -441,6 +1290,7 @@
           </div>
         {% endif %}
       </section>
+      </section>
     </main>
 
     <script>
@@ -466,14 +1316,120 @@
       const timelapseVideo = document.getElementById("timelapseVideo");
       const clearPhotosBtn = document.getElementById("clearPhotosBtn");
       const clearPhotosStatus = document.getElementById("clearPhotosStatus");
+      const sproutImage = document.getElementById("sproutImage");
+      const sproutAnalyzeBtn = document.getElementById("sproutAnalyzeBtn");
+      const sproutPreview = document.getElementById("sproutPreview");
+      const sproutStatus = document.getElementById("sproutStatus");
+      const sproutHistoryGrid = document.getElementById("sproutHistoryGrid");
+      const sproutHistoryCount = document.getElementById("sproutHistoryCount");
+      const identifyByName = document.getElementById("identifyByName");
+      const identifyByImage = document.getElementById("identifyByImage");
+      const seedName = document.getElementById("seedName");
+      const sproutNamePanel = document.getElementById("sproutNamePanel");
+      const sproutImagePanel = document.getElementById("sproutImagePanel");
+      const downloadSproutBtn = document.getElementById("downloadSproutBtn");
+      const themeToggle = document.getElementById("themeToggle");
+      const workspaceTabs = document.querySelectorAll(".workspace-tab");
+      const tabPanels = document.querySelectorAll(".tab-panel");
       let stream = null;
       let autoTimer = null;
       let sensorTimer = null;
+      let latestSproutAnalysisId = null;
 
+      initializeTheme();
       updateEndpoint();
+      updateSproutIdentificationMode();
       startSensorStream();
 
       seedCount.addEventListener("input", updateEndpoint);
+      workspaceTabs.forEach((button) => {
+        button.addEventListener("click", () => activateWorkspaceTab(button.dataset.tabTarget));
+      });
+      identifyByName.addEventListener("change", updateSproutIdentificationMode);
+      identifyByImage.addEventListener("change", updateSproutIdentificationMode);
+      downloadSproutBtn.addEventListener("click", downloadSproutReport);
+      seedName.addEventListener("input", () => {
+        if (!identifyByName.checked) {
+          return;
+        }
+        const name = seedName.value.trim();
+        sproutPreview.className = "sprout-preview is-empty";
+        sproutPreview.textContent = name ? `Guidance will be created for ${name}.` : "Enter the seed or sprout name.";
+      });
+
+      themeToggle.addEventListener("click", () => {
+        const nextTheme = document.body.dataset.theme === "dark" ? "light" : "dark";
+        applyTheme(nextTheme);
+        localStorage.setItem("sonicseed-theme", nextTheme);
+      });
+
+      sproutImage.addEventListener("change", () => {
+        const file = sproutImage.files[0];
+        if (!file) {
+          sproutPreview.className = "sprout-preview is-empty";
+          sproutPreview.textContent = "Choose a clear sprout photo with seeds and shoots visible.";
+          return;
+        }
+
+        const imageUrl = URL.createObjectURL(file);
+        sproutPreview.className = "sprout-preview";
+        sproutPreview.innerHTML = "";
+        const image = document.createElement("img");
+        image.src = imageUrl;
+        image.alt = "Selected sprout preview";
+        image.onload = () => URL.revokeObjectURL(imageUrl);
+        sproutPreview.appendChild(image);
+        sproutStatus.textContent = "Photo ready for analysis.";
+      });
+
+      sproutAnalyzeBtn.addEventListener("click", async () => {
+        const mode = identifyByName.checked ? "name" : "image";
+        const file = sproutImage.files[0];
+        const name = seedName.value.trim();
+
+        if (mode === "name" && !name) {
+          sproutStatus.textContent = "Enter a seed or sprout name first.";
+          seedName.focus();
+          return;
+        }
+
+        if (mode === "image" && !file) {
+          sproutStatus.textContent = "Select a sprout photo first.";
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append("identification_mode", mode);
+        if (mode === "name") {
+          formData.append("seed_name", name);
+        } else {
+          formData.append("sprout_image", file);
+        }
+        sproutAnalyzeBtn.disabled = true;
+        sproutStatus.textContent = mode === "name"
+          ? "Building care guidance from the seed name..."
+          : "Analyzing sprout identity and building care guidance...";
+
+        try {
+          const response = await fetch("/analyze_sprout", {
+            method: "POST",
+            body: formData
+          });
+          const payload = await response.json();
+
+          if (!response.ok) {
+            throw new Error(payload.error || "Sprout analysis failed.");
+          }
+
+          renderSproutResult(payload);
+          prependSproutHistory(payload);
+          sproutStatus.textContent = "Sprout guidance saved. PDF report is ready.";
+        } catch (error) {
+          sproutStatus.textContent = error.message;
+        } finally {
+          sproutAnalyzeBtn.disabled = false;
+        }
+      });
 
       startCameraBtn.addEventListener("click", async () => {
         try {
@@ -573,6 +1529,34 @@
         }
       });
 
+      function updateSproutIdentificationMode() {
+        const useName = identifyByName.checked;
+        sproutNamePanel.classList.toggle("d-none", !useName);
+        sproutImagePanel.classList.toggle("d-none", useName);
+
+        if (useName) {
+          const name = seedName.value.trim();
+          sproutPreview.className = "sprout-preview is-empty";
+          sproutPreview.textContent = name ? `Guidance will be created for ${name}.` : "Enter the seed or sprout name.";
+          sproutStatus.textContent = "";
+        } else if (!sproutImage.files[0]) {
+          sproutPreview.className = "sprout-preview is-empty";
+          sproutPreview.textContent = "Choose a clear sprout photo with seeds and shoots visible.";
+          sproutStatus.textContent = "";
+        }
+      }
+
+      function activateWorkspaceTab(panelId) {
+        workspaceTabs.forEach((button) => {
+          const isActive = button.dataset.tabTarget === panelId;
+          button.classList.toggle("is-active", isActive);
+          button.setAttribute("aria-selected", isActive ? "true" : "false");
+        });
+        tabPanels.forEach((panel) => {
+          panel.classList.toggle("is-active", panel.id === panelId);
+        });
+      }
+
       async function captureWebcamBlob() {
         if (!stream || !webcam.videoWidth) {
           setStatus("Start the camera before capturing.");
@@ -616,7 +1600,7 @@
       function updateEnvironment(env) {
         document.getElementById("suitabilityValue").textContent = `${Number(env.germination_suitability).toFixed(1)}%`;
         document.getElementById("suitabilityBar").style.width = `${Number(env.germination_suitability)}%`;
-        document.getElementById("temperatureValue").textContent = `${Number(env.temperature_c).toFixed(1)}°C`;
+        document.getElementById("temperatureValue").textContent = `${Number(env.temperature_c).toFixed(1)}Â°C`;
         document.getElementById("temperatureScore").textContent = Number(env.temperature_score).toFixed(1);
         document.getElementById("humidityValue").textContent = `${Number(env.humidity_percent).toFixed(1)}%`;
         document.getElementById("moistureStress").textContent = Number(env.moisture_stress).toFixed(1);
@@ -685,8 +1669,77 @@
         galleryCount.textContent = `${galleryGrid.children.length} shown`;
       }
 
+      function renderSproutResult(result) {
+        latestSproutAnalysisId = result.id;
+        document.getElementById("sproutName").textContent = result.sprout_name;
+        document.getElementById("sproutConfidence").textContent = `${Number(result.confidence).toFixed(0)}% confidence`;
+        document.getElementById("sproutVisualSummary").textContent = result.visual_summary;
+        fillInsightList("sproutCare", result.care_plan);
+        fillInsightList("sproutHarvest", result.harvest_plan);
+        fillInsightList("sproutFood", result.indian_food_ideas);
+        fillInsightList("sproutNutrition", result.nutrition_benefits);
+        downloadSproutBtn.disabled = false;
+      }
+
+      function downloadSproutReport() {
+        if (!latestSproutAnalysisId) {
+          sproutStatus.textContent = "Generate sprout guidance before downloading.";
+          return;
+        }
+
+        window.location.href = `/download_sprout_report/${latestSproutAnalysisId}`;
+      }
+
+      function fillInsightList(elementId, items) {
+        const list = document.getElementById(elementId);
+        list.innerHTML = "";
+        for (const item of items || []) {
+          const li = document.createElement("li");
+          li.textContent = item;
+          list.appendChild(li);
+        }
+      }
+
+      function prependSproutHistory(result) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "col-md-6 col-xl-4";
+        const mediaMarkup = result.image_url
+          ? `<img src="${result.image_url}" alt="${result.sprout_name} analysis">`
+          : `<div class="sprout-placeholder">${result.sprout_name}</div>`;
+        wrapper.innerHTML = `
+          <article class="gallery-card h-100">
+            ${mediaMarkup}
+            <div class="gallery-meta">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge rounded-pill badge-soft">${result.sprout_name}</span>
+                <span class="text-secondary small">${Number(result.confidence).toFixed(0)}%</span>
+              </div>
+              <div class="text-secondary small">${result.visual_summary}</div>
+            </div>
+          </article>
+        `;
+
+        sproutHistoryGrid.prepend(wrapper);
+        while (sproutHistoryGrid.children.length > 6) {
+          sproutHistoryGrid.lastElementChild.remove();
+        }
+        sproutHistoryCount.textContent = `${sproutHistoryGrid.children.length} saved`;
+      }
+
       function updateEndpoint() {
         endpointBox.textContent = `${window.location.origin}/upload_image?seed_count=${seedCount.value || 25}`;
+      }
+
+      function initializeTheme() {
+        const savedTheme = localStorage.getItem("sonicseed-theme") || "light";
+        applyTheme(savedTheme);
+      }
+
+      function applyTheme(theme) {
+        const normalizedTheme = theme === "dark" ? "dark" : "light";
+        document.body.dataset.theme = normalizedTheme;
+        themeToggle.textContent = normalizedTheme === "dark" ? "Light mode" : "Dark mode";
+        themeToggle.setAttribute("aria-pressed", normalizedTheme === "dark" ? "true" : "false");
       }
 
       function setStatus(message) {

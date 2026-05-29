@@ -1,12 +1,22 @@
-from datetime import datetime, timedelta, timezone
+﻿from datetime import datetime, timedelta, timezone
+from io import BytesIO
 import math
+import os
 from pathlib import Path
+import re
 from uuid import uuid4
 
 import cv2
-from flask import Flask, jsonify, render_template, request, url_for
+import numpy as np
+from flask import Flask, flash, jsonify, redirect, render_template, request, send_file, session, url_for
 from flask_sqlalchemy import SQLAlchemy
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.units import inch
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 from sqlalchemy import text
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from vision import analyze_image
 
@@ -15,9 +25,21 @@ BASE_DIR = Path(__file__).resolve().parent
 CAPTURE_DIR = BASE_DIR / "static" / "captures"
 OVERLAY_DIR = BASE_DIR / "static" / "overlays"
 TIMELAPSE_DIR = BASE_DIR / "static" / "timelapses"
+SPROUT_UPLOAD_DIR = BASE_DIR / "static" / "sprout_uploads"
 DB_PATH = BASE_DIR / "growth_logs.db"
 
 db = SQLAlchemy()
+
+
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False)
+    email = db.Column(db.String(255), nullable=False, unique=True, index=True)
+    password_hash = db.Column(db.String(255), nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+
+    def verify_password(self, password):
+        return check_password_hash(self.password_hash, password)
 
 
 class GrowthLog(db.Model):
@@ -93,8 +115,173 @@ class EnvironmentLog(db.Model):
         }
 
 
+class SproutAnalysis(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    timestamp = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    image_path = db.Column(db.String(255), nullable=False)
+    sprout_key = db.Column(db.String(80), nullable=False)
+    sprout_name = db.Column(db.String(120), nullable=False)
+    confidence = db.Column(db.Float, nullable=False)
+    visual_summary = db.Column(db.String(255), nullable=False)
+    care_plan = db.Column(db.Text, nullable=False)
+    harvest_plan = db.Column(db.Text, nullable=False)
+    indian_food_ideas = db.Column(db.Text, nullable=False)
+    nutrition_benefits = db.Column(db.Text, nullable=False)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "timestamp": self.timestamp.isoformat(),
+            "image_url": url_for("static", filename=self.image_path.replace("static/", "")) if self.image_path else None,
+            "sprout_key": self.sprout_key,
+            "sprout_name": self.sprout_name,
+            "confidence": self.confidence,
+            "visual_summary": self.visual_summary,
+            "care_plan": split_lines(self.care_plan),
+            "harvest_plan": split_lines(self.harvest_plan),
+            "indian_food_ideas": split_lines(self.indian_food_ideas),
+            "nutrition_benefits": split_lines(self.nutrition_benefits),
+        }
+
+
+SPROUT_LIBRARY = {
+    "chickpea": {
+        "name": "Chickpea / Chana sprout",
+        "aliases": ["chickpea", "chana", "channa", "chole", "gram", "kabuli", "bengal"],
+        "visual": "round beige seeds with thick pale shoots",
+        "care": [
+            "Soak 8-12 hours, rinse well, then drain completely.",
+            "Keep in a breathable jar or cloth in indirect light at room temperature.",
+            "Rinse and drain every 8-12 hours so the sprouts stay moist but not waterlogged.",
+        ],
+        "harvest": [
+            "Harvest when shoots are about 0.5-1.5 cm for a sweet, nutty crunch.",
+            "Refrigerate after a final rinse and use within 2-3 days.",
+            "Light steaming is a good idea for sensitive stomachs.",
+        ],
+        "food": [
+            "Kala chana sprout chaat with onion, tomato, coriander, lemon, and chaat masala.",
+            "Sprouted chana usal with mustard seeds, curry leaves, coconut, and mild masala.",
+            "Add to poha, upma, millet khichdi, or roti rolls for extra bite.",
+            "Toss with cucumber, carrot, curd, and roasted cumin for a quick raita-style bowl.",
+        ],
+        "nutrition": [
+            "Good plant protein and fibre for satiety.",
+            "Provides folate, iron, magnesium, and slow-release carbohydrates.",
+            "Sprouting improves digestibility and can improve mineral availability.",
+        ],
+    },
+    "mung": {
+        "name": "Green gram / Moong sprout",
+        "aliases": ["mung", "moong", "green gram", "green"],
+        "visual": "small green seed coats with slender white tails",
+        "care": [
+            "Soak 6-8 hours, drain, and keep the beans in a damp cloth or sprouting jar.",
+            "Rinse twice daily; moong sprouts quickly and likes airflow.",
+            "Keep away from harsh sunlight to avoid drying and bitterness.",
+        ],
+        "harvest": [
+            "Harvest in 24-48 hours when tails are 1-3 cm.",
+            "For a milder taste, stop early; for more crunch, let them lengthen another half day.",
+            "Store chilled in a dry container after draining thoroughly.",
+        ],
+        "food": [
+            "Classic moong sprout salad with kachumber, lemon, coriander, and kala namak.",
+            "Matki-style misal base, but with moong for a lighter sprouted curry.",
+            "Add to dosa batter, pesarattu, cheela, or adai for protein-rich breakfasts.",
+            "Stir into bhel, sev puri topping, or curd rice just before serving.",
+        ],
+        "nutrition": [
+            "Rich in fibre, vitamin C after sprouting, folate, and potassium.",
+            "Light, quick-cooking protein source that works well in Indian breakfasts.",
+            "Lower calorie density with good hydration and crunch.",
+        ],
+    },
+    "fenugreek": {
+        "name": "Fenugreek / Methi sprout",
+        "aliases": ["fenugreek", "methi"],
+        "visual": "small amber seeds with fine shoots and a bitter aroma",
+        "care": [
+            "Soak only 4-6 hours; methi can become slimy if kept too wet.",
+            "Rinse gently twice daily and drain very well.",
+            "Use a thin layer in the sprouter so air reaches all seeds.",
+        ],
+        "harvest": [
+            "Harvest at 1-2 cm shoots, usually in 2-3 days.",
+            "Taste before using; older methi sprouts become more bitter.",
+            "Use fresh or lightly saute to soften the bitterness.",
+        ],
+        "food": [
+            "Mix into methi sprout thepla dough with curd and ajwain.",
+            "Use in koshimbir with grated carrot, coconut, lemon, and peanuts.",
+            "Add a small handful to dal, sambar, or sprouts sabzi for a pleasantly bitter note.",
+            "Blend into green chutney with coriander, mint, lemon, and green chilli.",
+        ],
+        "nutrition": [
+            "Contains fibre and traditional bitter phytonutrients associated with glucose-friendly meals.",
+            "Adds iron, magnesium, and distinctive digestive bitters.",
+            "Best used in smaller portions because the flavour is strong.",
+        ],
+    },
+    "lentil": {
+        "name": "Lentil / Masoor sprout",
+        "aliases": ["lentil", "masoor"],
+        "visual": "flat lens-shaped seeds with short white shoots",
+        "care": [
+            "Soak 6-8 hours, rinse, drain, and spread loosely.",
+            "Rinse twice daily; avoid crowding because lentils heat up when densely packed.",
+            "Keep in shade with steady airflow.",
+        ],
+        "harvest": [
+            "Harvest in 1-2 days for tender, slightly peppery sprouts.",
+            "Cook briefly if adding to curries or feeding children.",
+            "Refrigerate after draining and use within 2 days.",
+        ],
+        "food": [
+            "Masoor sprout dal with tomato, garlic, cumin, and a short simmer.",
+            "Use in sprout pulao with peas, carrots, turmeric, and garam masala.",
+            "Fold into paratha stuffing with potato, coriander, and amchur.",
+            "Make a warm sundal-style snack with mustard seeds, curry leaves, and coconut.",
+        ],
+        "nutrition": [
+            "Good protein, folate, iron, and soluble fibre.",
+            "Sprouting shortens cooking time and improves texture.",
+            "Works well for balanced meals with rice, roti, or millets.",
+        ],
+    },
+    "mustard": {
+        "name": "Mustard / Rai sprout",
+        "aliases": ["mustard", "rai", "sarson"],
+        "visual": "tiny dark seeds with sharp peppery shoots",
+        "care": [
+            "Use a tray or mesh rather than a deep jar because mustard forms gel when wet.",
+            "Mist lightly and keep the layer thin.",
+            "Give indirect light after germination for greener micro-sprouts.",
+        ],
+        "harvest": [
+            "Harvest young at 3-5 days when shoots are tender and spicy.",
+            "Cut with clean scissors and rinse lightly.",
+            "Use fresh; mustard sprouts lose punch quickly in the fridge.",
+        ],
+        "food": [
+            "Top dahi puri, sev puri, or bhel with a small pinch for heat.",
+            "Add to curd dips, raita, or cucumber salad.",
+            "Use as a garnish on khichdi, dal, or sarson-flavoured saag bowls.",
+            "Mix into chutney with coriander and lemon for a sharper finish.",
+        ],
+        "nutrition": [
+            "Peppery cruciferous sprout with vitamin K, vitamin C, and glucosinolate compounds.",
+            "Strong flavour means small amounts go a long way.",
+            "Adds freshness without much oil, salt, or sugar.",
+        ],
+    },
+}
+
+
 def create_app():
     app = Flask(__name__)
+    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "sonicseed-local-dev-secret")
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB_PATH}"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
@@ -104,20 +291,76 @@ def create_app():
     with app.app_context():
         db.create_all()
         ensure_growth_log_columns()
+        recalibrate_saved_sprout_analyses()
 
     @app.route("/")
     def index():
+        if "user_id" not in session:
+            return redirect(url_for("login"))
         logs = GrowthLog.query.order_by(GrowthLog.timestamp.desc()).limit(10).all()
         latest = logs[0] if logs else None
         comparison = build_comparison_summary(days=3)
         environment = get_or_create_environment_snapshot()
+        sprout_analyses = SproutAnalysis.query.filter_by(user_id=session.get("user_id")).order_by(
+            SproutAnalysis.timestamp.desc()
+        ).limit(6).all()
         return render_template(
             "index.html",
             logs=logs,
             latest=latest,
             comparison=comparison,
             environment=environment,
+            sprout_analyses=sprout_analyses,
+            current_user=get_current_user(),
         )
+
+    @app.route("/login", methods=["GET", "POST"])
+    def login():
+        if request.method == "POST":
+            email = normalize_email(request.form.get("email", ""))
+            password = request.form.get("password", "")
+            user = User.query.filter_by(email=email).first()
+            if user and user.verify_password(password):
+                session["user_id"] = user.id
+                session["user_name"] = user.name
+                return redirect(url_for("index"))
+            flash("Email or password is incorrect.", "danger")
+
+        return render_template("login.html")
+
+    @app.route("/register", methods=["GET", "POST"])
+    def register():
+        if request.method == "POST":
+            name = request.form.get("name", "").strip()
+            email = normalize_email(request.form.get("email", ""))
+            password = request.form.get("password", "")
+            confirm_password = request.form.get("confirm_password", "")
+
+            if not name or not email or not password:
+                flash("Name, email, and password are required.", "danger")
+            elif not is_valid_email(email):
+                flash("Enter a valid email address.", "danger")
+            elif len(password) < 6:
+                flash("Use at least 6 characters for the password.", "danger")
+            elif password != confirm_password:
+                flash("Passwords do not match.", "danger")
+            elif User.query.filter_by(email=email).first():
+                flash("That email is already registered. Please log in.", "warning")
+                return redirect(url_for("login"))
+            else:
+                user = User(name=name, email=email, password_hash=generate_password_hash(password))
+                db.session.add(user)
+                db.session.commit()
+                session["user_id"] = user.id
+                session["user_name"] = user.name
+                return redirect(url_for("index"))
+
+        return render_template("register.html")
+
+    @app.route("/logout", methods=["POST"])
+    def logout():
+        session.clear()
+        return redirect(url_for("login"))
 
     @app.route("/upload_image", methods=["POST"])
     def upload_image():
@@ -212,6 +455,66 @@ def create_app():
         clear_image_history()
         return jsonify({"status": "cleared"}), 200
 
+    @app.route("/analyze_sprout", methods=["POST"])
+    def analyze_sprout_upload():
+        identification_mode = request.form.get("identification_mode", "image")
+        seed_name = request.form.get("seed_name", "").strip()
+        image_file = request.files.get("sprout_image")
+        timestamp = datetime.now(timezone.utc)
+
+        if identification_mode == "name":
+            if not seed_name:
+                return jsonify({"error": "Enter a seed or sprout name first."}), 400
+            try:
+                analysis_data = identify_sprout_by_name(seed_name)
+            except ValueError as exc:
+                return jsonify({"error": str(exc)}), 422
+            image_path = ""
+        else:
+            if not image_file or not image_file.filename:
+                return jsonify({"error": "Upload a sprout photo first."}), 400
+
+            extension = Path(image_file.filename).suffix.lower()
+            if extension not in {".jpg", ".jpeg", ".png", ".webp"}:
+                extension = ".jpg"
+
+            filename = f"sprout_{timestamp.strftime('%Y%m%d_%H%M%S')}_{uuid4().hex[:8]}{extension}"
+            upload_path = SPROUT_UPLOAD_DIR / filename
+            image_file.save(upload_path)
+
+            try:
+                analysis_data = identify_sprout(upload_path, image_file.filename)
+            except ValueError as exc:
+                upload_path.unlink(missing_ok=True)
+                return jsonify({"error": str(exc)}), 422
+            image_path = static_path(upload_path)
+
+        analysis = SproutAnalysis(
+            user_id=session.get("user_id"),
+            timestamp=timestamp,
+            image_path=image_path,
+            **analysis_data,
+        )
+        db.session.add(analysis)
+        db.session.commit()
+        return jsonify(analysis.to_dict()), 201
+
+    @app.route("/download_sprout_report/<int:analysis_id>")
+    def download_sprout_report(analysis_id):
+        analysis = SproutAnalysis.query.get_or_404(analysis_id)
+        current_user_id = session.get("user_id")
+        if analysis.user_id and current_user_id and analysis.user_id != current_user_id:
+            return jsonify({"error": "That report belongs to another account."}), 403
+
+        pdf = build_sprout_report_pdf(analysis)
+        filename = f"{slugify_filename(analysis.sprout_name)}-sprout-report.pdf"
+        return send_file(
+            pdf,
+            mimetype="application/pdf",
+            as_attachment=True,
+            download_name=filename,
+        )
+
     return app
 
 
@@ -219,6 +522,7 @@ def ensure_project_folders():
     CAPTURE_DIR.mkdir(parents=True, exist_ok=True)
     OVERLAY_DIR.mkdir(parents=True, exist_ok=True)
     TIMELAPSE_DIR.mkdir(parents=True, exist_ok=True)
+    SPROUT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     (BASE_DIR / "templates").mkdir(exist_ok=True)
 
 
@@ -243,6 +547,365 @@ def ensure_growth_log_columns():
             db.session.execute(text(f"ALTER TABLE growth_log ADD COLUMN {column_name} {definition}"))
 
     db.session.commit()
+
+
+def get_current_user():
+    user_id = session.get("user_id")
+    if not user_id:
+        return None
+    return db.session.get(User, user_id)
+
+
+def normalize_email(email):
+    return email.strip().lower()
+
+
+def is_valid_email(email):
+    return bool(re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email))
+
+
+def split_lines(value):
+    if not value:
+        return []
+    return [line for line in value.split("\n") if line]
+
+
+def recalibrate_saved_sprout_analyses():
+    changed = False
+    for analysis in SproutAnalysis.query.all():
+        if not analysis.image_path:
+            continue
+        image_path = BASE_DIR / analysis.image_path
+        if not image_path.exists():
+            db.session.delete(analysis)
+            changed = True
+            continue
+        try:
+            updated = identify_sprout(image_path)
+        except ValueError:
+            continue
+
+        if analysis.sprout_key == updated["sprout_key"]:
+            continue
+
+        for key, value in updated.items():
+            setattr(analysis, key, value)
+        changed = True
+
+    if changed:
+        db.session.commit()
+
+
+def identify_sprout(image_path, original_filename=""):
+    image = cv2.imread(str(image_path))
+    if image is None:
+        raise ValueError("Could not read that image. Try a clearer JPG or PNG.")
+
+    metrics = extract_sprout_image_metrics(image)
+    scores = score_sprout_candidates(metrics, original_filename)
+    sprout_key, score = max(scores.items(), key=lambda item: item[1])
+    profile = SPROUT_LIBRARY[sprout_key]
+    confidence = min(96, max(58, round(score)))
+
+    if confidence < 64:
+        visual_summary = (
+            "The photo has mixed visual signals, so this is a best-fit identification. "
+            f"It most closely matches {profile['visual']}."
+        )
+    else:
+        visual_summary = f"The image most closely matches {profile['visual']}."
+
+    return build_sprout_profile_response(sprout_key, confidence, visual_summary)
+
+
+def identify_sprout_by_name(seed_name):
+    normalized_name = seed_name.strip().lower()
+    if not normalized_name:
+        raise ValueError("Enter a seed or sprout name first.")
+
+    for sprout_key, profile in SPROUT_LIBRARY.items():
+        searchable_names = [profile["name"].lower(), *profile["aliases"]]
+        if any(alias == normalized_name or alias in normalized_name for alias in searchable_names):
+            return build_sprout_profile_response(
+                sprout_key,
+                confidence=100,
+                visual_summary="Guidance is based on the seed or sprout name you entered.",
+            )
+
+    supported_names = ", ".join(profile["name"] for profile in SPROUT_LIBRARY.values())
+    raise ValueError(f"That seed is not in the guide yet. Try one of: {supported_names}.")
+
+
+def build_sprout_profile_response(sprout_key, confidence, visual_summary):
+    profile = SPROUT_LIBRARY[sprout_key]
+    return {
+        "sprout_key": sprout_key,
+        "sprout_name": profile["name"],
+        "confidence": confidence,
+        "visual_summary": visual_summary,
+        "care_plan": "\n".join(profile["care"]),
+        "harvest_plan": "\n".join(profile["harvest"]),
+        "indian_food_ideas": "\n".join(profile["food"]),
+        "nutrition_benefits": "\n".join(profile["nutrition"]),
+    }
+
+
+def slugify_filename(value):
+    slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+    return slug or "sonicseed"
+
+
+def build_sprout_report_pdf(analysis):
+    buffer = BytesIO()
+    document = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=0.62 * inch,
+        leftMargin=0.62 * inch,
+        topMargin=0.58 * inch,
+        bottomMargin=0.58 * inch,
+        title=f"{analysis.sprout_name} report",
+    )
+
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        "SonicTitle",
+        parent=styles["Title"],
+        textColor=colors.HexColor("#1f5d43"),
+        fontName="Helvetica-Bold",
+        fontSize=24,
+        leading=28,
+        spaceAfter=8,
+    )
+    subtitle_style = ParagraphStyle(
+        "SonicSubtitle",
+        parent=styles["BodyText"],
+        textColor=colors.HexColor("#5f7068"),
+        fontSize=10.5,
+        leading=15,
+        spaceAfter=14,
+    )
+    section_style = ParagraphStyle(
+        "SonicSection",
+        parent=styles["Heading2"],
+        textColor=colors.HexColor("#2d6a4f"),
+        fontName="Helvetica-Bold",
+        fontSize=13,
+        leading=16,
+        spaceBefore=4,
+        spaceAfter=7,
+    )
+    body_style = ParagraphStyle(
+        "SonicBody",
+        parent=styles["BodyText"],
+        textColor=colors.HexColor("#2f463c"),
+        fontSize=10,
+        leading=14,
+    )
+    chip_style = ParagraphStyle(
+        "SonicChip",
+        parent=styles["BodyText"],
+        textColor=colors.HexColor("#1f5d43"),
+        fontName="Helvetica-Bold",
+        fontSize=10,
+        leading=13,
+    )
+
+    story = [
+        Paragraph("SonicSeed Sprout Intelligence Report", title_style),
+        Paragraph(
+            f"{analysis.sprout_name} &nbsp; | &nbsp; {analysis.confidence:.0f}% confidence &nbsp; | &nbsp; "
+            f"{analysis.timestamp.strftime('%Y-%m-%d %H:%M')}",
+            subtitle_style,
+        ),
+        Table(
+            [
+                [
+                    Paragraph("Likely sprout", chip_style),
+                    Paragraph(analysis.sprout_name, body_style),
+                    Paragraph("Signal", chip_style),
+                    Paragraph(analysis.visual_summary, body_style),
+                ]
+            ],
+            colWidths=[1.1 * inch, 1.6 * inch, 0.75 * inch, 3.05 * inch],
+            style=TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#edf8f2")),
+                    ("BOX", (0, 0), (-1, -1), 0.8, colors.HexColor("#b7e4c7")),
+                    ("INNERGRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#d8eadf")),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                    ("TOPPADDING", (0, 0), (-1, -1), 10),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+                ]
+            ),
+        ),
+        Spacer(1, 0.18 * inch),
+    ]
+
+    for title, lines in [
+        ("Care & Growing", split_lines(analysis.care_plan)),
+        ("Harvest Timing", split_lines(analysis.harvest_plan)),
+        ("Indian Food Ideas", split_lines(analysis.indian_food_ideas)),
+        ("Nutrition Notes", split_lines(analysis.nutrition_benefits)),
+    ]:
+        story.extend(build_pdf_section(title, lines, section_style, body_style))
+
+    story.append(Spacer(1, 0.1 * inch))
+    story.append(
+        Paragraph(
+            "Keep sprouts clean, rinse thoroughly, and lightly cook when serving children, elders, pregnant people, or anyone with a sensitive stomach.",
+            subtitle_style,
+        )
+    )
+
+    document.build(story, onFirstPage=draw_pdf_frame, onLaterPages=draw_pdf_frame)
+    buffer.seek(0)
+    return buffer
+
+
+def build_pdf_section(title, lines, section_style, body_style):
+    rows = [[Paragraph(title, section_style)]]
+    for line in lines:
+        rows.append([Paragraph(f"&#8226; {line}", body_style)])
+
+    return [
+        Table(
+            rows,
+            colWidths=[6.55 * inch],
+            style=TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#ffffff")),
+                    ("BOX", (0, 0), (-1, -1), 0.7, colors.HexColor("#d8eadf")),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 12),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 12),
+                    ("TOPPADDING", (0, 0), (-1, -1), 8),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                    ("LINEBELOW", (0, 0), (-1, 0), 0.5, colors.HexColor("#e8ecef")),
+                ]
+            ),
+        ),
+        Spacer(1, 0.12 * inch),
+    ]
+
+
+def draw_pdf_frame(canvas, document):
+    canvas.saveState()
+    width, height = A4
+    canvas.setFillColor(colors.HexColor("#f4fbf7"))
+    canvas.rect(0, 0, width, height, fill=1, stroke=0)
+    canvas.setStrokeColor(colors.HexColor("#d8eadf"))
+    canvas.setLineWidth(1)
+    canvas.roundRect(0.35 * inch, 0.32 * inch, width - 0.7 * inch, height - 0.64 * inch, 18, stroke=1, fill=0)
+    canvas.setFillColor(colors.HexColor("#d9f0e4"))
+    canvas.circle(width - 0.75 * inch, height - 0.55 * inch, 0.18 * inch, fill=1, stroke=0)
+    canvas.circle(0.72 * inch, 0.56 * inch, 0.12 * inch, fill=1, stroke=0)
+    canvas.setStrokeColor(colors.HexColor("#74c69d"))
+    canvas.setLineWidth(2)
+    canvas.bezier(width - 1.35 * inch, height - 0.78 * inch, width - 1.05 * inch, height - 1.12 * inch, width - 0.7 * inch, height - 1.05 * inch, width - 0.48 * inch, height - 1.28 * inch)
+    canvas.restoreState()
+
+
+def extract_sprout_image_metrics(image):
+    resized = resize_for_analysis(image)
+    hsv = cv2.cvtColor(resized, cv2.COLOR_BGR2HSV)
+    gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
+
+    saturation = hsv[:, :, 1]
+    value = hsv[:, :, 2]
+    hue = hsv[:, :, 0]
+    total_pixels = resized.shape[0] * resized.shape[1]
+
+    green_mask = ((hue >= 35) & (hue <= 90) & (saturation > 45) & (value > 45))
+    olive_green_mask = ((hue >= 18) & (hue <= 38) & (saturation > 70) & (value > 50))
+    yellow_mask = ((hue >= 14) & (hue <= 35) & (saturation > 35) & (value > 50))
+    beige_mask = ((hue >= 10) & (hue <= 32) & (saturation > 18) & (saturation < 95) & (value > 90))
+    dark_mask = value < 75
+    white_mask = (saturation < 45) & (value > 150)
+
+    edges = cv2.Canny(gray, 70, 150)
+    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    roundish_count = 0
+    elongated_count = 0
+    tiny_count = 0
+
+    for contour in contours:
+        area = cv2.contourArea(contour)
+        if area < 20:
+            continue
+        x, y, width, height = cv2.boundingRect(contour)
+        aspect = max(width, height) / max(min(width, height), 1)
+        if area < 120:
+            tiny_count += 1
+        if aspect < 1.55:
+            roundish_count += 1
+        elif aspect > 2.2:
+            elongated_count += 1
+
+    return {
+        "green_ratio": float(np.count_nonzero(green_mask) / total_pixels),
+        "olive_green_ratio": float(np.count_nonzero(olive_green_mask) / total_pixels),
+        "yellow_ratio": float(np.count_nonzero(yellow_mask) / total_pixels),
+        "beige_ratio": float(np.count_nonzero(beige_mask) / total_pixels),
+        "dark_ratio": float(np.count_nonzero(dark_mask) / total_pixels),
+        "white_ratio": float(np.count_nonzero(white_mask) / total_pixels),
+        "roundish_count": roundish_count,
+        "elongated_count": elongated_count,
+        "tiny_count": tiny_count,
+    }
+
+
+def resize_for_analysis(image):
+    height, width = image.shape[:2]
+    max_side = max(height, width)
+    if max_side <= 900:
+        return image
+    scale = 900 / max_side
+    return cv2.resize(image, (int(width * scale), int(height * scale)))
+
+
+def score_sprout_candidates(metrics, original_filename):
+    filename = original_filename.lower()
+    scores = {key: 45.0 for key in SPROUT_LIBRARY}
+
+    for key, profile in SPROUT_LIBRARY.items():
+        if any(alias in filename for alias in profile["aliases"]):
+            scores[key] += 34
+
+    green = metrics["green_ratio"]
+    olive_green = metrics["olive_green_ratio"]
+    yellow = metrics["yellow_ratio"]
+    beige = metrics["beige_ratio"]
+    dark = metrics["dark_ratio"]
+    white = metrics["white_ratio"]
+    roundish = metrics["roundish_count"]
+    elongated = metrics["elongated_count"]
+    tiny = metrics["tiny_count"]
+
+    scores["mung"] += olive_green * 105 + green * 45 + white * 14 + min(elongated, 22) * 1.1
+    scores["chickpea"] += beige * 54 + min(roundish, 16) * 0.9 + white * 7
+    scores["fenugreek"] += yellow * 42 + min(tiny, 24) * 0.9 + dark * 10
+    scores["lentil"] += min(roundish, 20) * 0.7 + white * 16 + yellow * 16
+    scores["mustard"] += dark * 34 + min(tiny, 30) * 1.2 + green * 20
+
+    if (green + olive_green) > 0.18 and white > 0.08:
+        scores["mung"] += 14
+    if olive_green > 0.22 and tiny > 35:
+        scores["mung"] += 34
+        scores["chickpea"] -= 28
+    if beige > 0.15 and white > 0.35 and dark < 0.08 and roundish >= 12:
+        scores["chickpea"] += 38
+        scores["fenugreek"] -= 32
+    if yellow > 0.25 and white > 0.35 and dark < 0.06:
+        scores["chickpea"] += 18
+        scores["fenugreek"] -= 18
+    if beige > 0.12 and roundish > elongated and olive_green < 0.12:
+        scores["chickpea"] += 8
+    if dark > 0.22 and tiny > 8:
+        scores["mustard"] += 10
+
+    return scores
 
 
 def read_incoming_image():
