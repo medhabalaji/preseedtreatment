@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Green Moong Batch Comparison</title>
+    <title>Chickpea Germination Intelligence</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
       :root {
@@ -59,7 +59,8 @@
       }
 
       .panel,
-      .stat-card,
+      .metric-card,
+      .feature-card,
       .gallery-card,
       .empty-state {
         background: var(--surface);
@@ -68,22 +69,46 @@
       }
 
       .panel,
-      .stat-card {
+      .metric-card,
+      .feature-card {
         padding: 20px;
       }
 
-      .stat-label {
+      .metric-label {
         color: var(--muted);
         font-size: 0.82rem;
         font-weight: 650;
         text-transform: uppercase;
       }
 
-      .stat-value {
+      .metric-value {
         color: var(--forest);
-        font-size: clamp(1.75rem, 4vw, 2.75rem);
-        font-weight: 750;
+        font-size: clamp(1.8rem, 4vw, 2.8rem);
+        font-weight: 760;
         line-height: 1.05;
+      }
+
+      .progress {
+        background: #edf1ef;
+        height: 10px;
+      }
+
+      .progress-bar {
+        background: var(--forest);
+      }
+
+      .badge-soft,
+      .endpoint-box {
+        background: var(--leaf);
+        color: var(--forest);
+        font-weight: 650;
+      }
+
+      .endpoint-box {
+        border: 1px solid #d8eadf;
+        border-radius: 8px;
+        overflow-wrap: anywhere;
+        padding: 12px 14px;
       }
 
       .camera-frame {
@@ -145,20 +170,6 @@
         --bs-btn-hover-color: var(--forest);
       }
 
-      .badge-soft,
-      .endpoint-box {
-        background: var(--leaf);
-        color: var(--forest);
-        font-weight: 650;
-      }
-
-      .endpoint-box {
-        border: 1px solid #d8eadf;
-        border-radius: 8px;
-        overflow-wrap: anywhere;
-        padding: 12px 14px;
-      }
-
       .comparison-row {
         background: var(--mist);
         border: 1px solid #d8eadf;
@@ -187,6 +198,27 @@
         min-height: 24px;
       }
 
+      .sensor-dot {
+        animation: pulse 1.4s ease-in-out infinite;
+        background: var(--forest);
+        border-radius: 999px;
+        display: inline-block;
+        height: 10px;
+        margin-right: 8px;
+        width: 10px;
+      }
+
+      @keyframes pulse {
+        0%, 100% {
+          opacity: 0.35;
+          transform: scale(0.9);
+        }
+        50% {
+          opacity: 1;
+          transform: scale(1.1);
+        }
+      }
+
       .timelapse-video {
         background: #eef2f0;
         border: 1px solid var(--line);
@@ -203,85 +235,115 @@
         <div class="d-flex align-items-center gap-3">
           <div class="brand-mark" aria-hidden="true"></div>
           <div>
-            <h1 class="brand-title h3 mb-1">Green Moong Batch Comparison</h1>
-            <p class="text-secondary mb-0">Left: pre-treated seeds. Right: untreated control.</p>
+            <h1 class="brand-title h3 mb-1">Chickpea Germination Intelligence</h1>
+            <p class="text-secondary mb-0">Environment suitability, moisture stress, and optional seed image monitoring</p>
           </div>
         </div>
-        <span class="badge rounded-pill badge-soft px-3 py-2">2-Batch OpenCV Monitor</span>
+        <span class="badge rounded-pill badge-soft px-3 py-2">Cicer arietinum</span>
       </header>
 
       <section class="row g-3 mb-4">
         <div class="col-lg-3 col-md-6">
-          <div class="stat-card h-100">
-            <div class="stat-label mb-2">Pre-treated Germination</div>
-            <div class="stat-value" id="treatedGermination">{{ "%.2f"|format(latest.treated_germination_percentage) if latest else "0.00" }}%</div>
-            <div class="text-secondary mt-2"><span id="treatedSprouts">{{ latest.treated_sprout_count if latest else 0 }}</span> sprouts</div>
+          <div class="metric-card h-100">
+            <div class="metric-label mb-2">Germination Suitability</div>
+            <div class="metric-value" id="suitabilityValue">{{ "%.1f"|format(environment.germination_suitability) }}%</div>
+            <div class="progress mt-3" role="progressbar" aria-label="Germination suitability">
+              <div class="progress-bar" id="suitabilityBar" style="width: {{ environment.germination_suitability }}%"></div>
+            </div>
           </div>
         </div>
         <div class="col-lg-3 col-md-6">
-          <div class="stat-card h-100">
-            <div class="stat-label mb-2">Untreated Germination</div>
-            <div class="stat-value" id="untreatedGermination">{{ "%.2f"|format(latest.untreated_germination_percentage) if latest else "0.00" }}%</div>
-            <div class="text-secondary mt-2"><span id="untreatedSprouts">{{ latest.untreated_sprout_count if latest else 0 }}</span> sprouts</div>
+          <div class="metric-card h-100">
+            <div class="metric-label mb-2">Temperature</div>
+            <div class="metric-value" id="temperatureValue">{{ "%.1f"|format(environment.temperature_c) }}°C</div>
+            <div class="text-secondary mt-2">Score: <span id="temperatureScore">{{ "%.1f"|format(environment.temperature_score) }}</span>/100</div>
           </div>
         </div>
         <div class="col-lg-3 col-md-6">
-          <div class="stat-card h-100">
-            <div class="stat-label mb-2">Germination Gap</div>
-            <div class="stat-value" id="germinationGap">{{ "%.2f"|format((latest.treated_germination_percentage - latest.untreated_germination_percentage) if latest else 0) }}%</div>
-            <div class="text-secondary mt-2">Pre-treated minus untreated</div>
+          <div class="metric-card h-100">
+            <div class="metric-label mb-2">Relative Humidity</div>
+            <div class="metric-value" id="humidityValue">{{ "%.1f"|format(environment.humidity_percent) }}%</div>
+            <div class="text-secondary mt-2">Moisture stress: <span id="moistureStress">{{ "%.1f"|format(environment.moisture_stress) }}</span>%</div>
           </div>
         </div>
         <div class="col-lg-3 col-md-6">
-          <div class="stat-card h-100">
-            <div class="stat-label mb-2">Growth Area Gap</div>
-            <div class="stat-value" id="growthGap">{{ "%.0f"|format((latest.treated_white_area - latest.untreated_white_area) if latest else 0) }}</div>
-            <div class="text-secondary mt-2">White radical pixels</div>
+          <div class="metric-card h-100">
+            <div class="metric-label mb-2">VPD</div>
+            <div class="metric-value" id="vpdValue">{{ "%.2f"|format(environment.vapor_pressure_deficit) }}</div>
+            <div class="text-secondary mt-2">kPa drying demand</div>
           </div>
         </div>
       </section>
 
       <section class="panel mb-4">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-          <h2 class="section-title h5 mb-0">2-3 Day Difference Summary</h2>
-          <span class="badge rounded-pill badge-soft px-3 py-2" id="leaderText">{{ comparison.leader }}</span>
+          <div>
+            <h2 class="section-title h5 mb-1">Live Germination Environment</h2>
+            <p class="text-secondary mb-0">Hardware-style temperature and humidity stream for chickpea germination conditions.</p>
+          </div>
+          <span class="badge rounded-pill badge-soft px-3 py-2"><span class="sensor-dot"></span><span id="sensorState">Sensor stream active</span></span>
         </div>
         <div class="row g-3">
-          <div class="col-md-3">
+          <div class="col-md-4">
             <div class="comparison-row">
-              <div class="stat-label">Pre-treated Speed</div>
-              <div class="h4 mb-0" id="treatedSpeed">{{ "%.2f"|format(comparison.treated_germination_speed) }} pp/day</div>
+              <div class="metric-label">Temperature Window</div>
+              <div class="h5 mb-0">Best around 22-28°C</div>
             </div>
           </div>
-          <div class="col-md-3">
+          <div class="col-md-4">
             <div class="comparison-row">
-              <div class="stat-label">Untreated Speed</div>
-              <div class="h4 mb-0" id="untreatedSpeed">{{ "%.2f"|format(comparison.untreated_germination_speed) }} pp/day</div>
+              <div class="metric-label">Humidity Window</div>
+              <div class="h5 mb-0">Balanced around 60-75%</div>
             </div>
           </div>
-          <div class="col-md-3">
+          <div class="col-md-4">
             <div class="comparison-row">
-              <div class="stat-label">Speed Difference</div>
-              <div class="h4 mb-0" id="speedGap">{{ "%.2f"|format(comparison.germination_speed_difference) }} pp/day</div>
-            </div>
-          </div>
-          <div class="col-md-3">
-            <div class="comparison-row">
-              <div class="stat-label">Growth Speed Gap</div>
-              <div class="h4 mb-0" id="areaSpeedGap">{{ "%.0f"|format(comparison.growth_speed_difference) }} px/day</div>
+              <div class="metric-label">Current Signal</div>
+              <div class="h5 mb-0" id="riskLabel">{{ environment.risk_label }}</div>
             </div>
           </div>
         </div>
-        <p class="text-secondary mb-0 mt-3">
-          Speed is calculated from the earliest and latest captures in the last {{ comparison.days }} days. Capture the same camera view at fixed intervals to make this comparison meaningful.
-        </p>
+        <div class="text-secondary mt-3">Last sensor update: <span id="sensorTimestamp">{{ environment.timestamp.strftime("%H:%M:%S") }}</span></div>
       </section>
 
       <section class="row g-3 mb-4">
-        <div class="col-lg-8">
-          <div class="panel h-100">
-            <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
-              <h2 class="section-title h5 mb-0">Webcam Monitoring</h2>
+        <div class="col-lg-6">
+          <div class="feature-card h-100">
+            <h2 class="section-title h5 mb-3">Chickpea Germination Progress</h2>
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <div class="comparison-row">
+                  <div class="metric-label">Treated Growth Index</div>
+                  <div class="h3 mb-0" id="treatedGrowthIndex">{{ "%.2f"|format((latest.treated_white_area / latest.expected_seed_count) if latest else 0) }}</div>
+                  <div class="text-secondary"><span id="treatedSprouts">{{ latest.treated_sprout_count if latest else 0 }}</span> germinated chickpeas</div>
+                </div>
+              </div>
+              <div class="col-sm-6">
+                <div class="comparison-row">
+                  <div class="metric-label">Control Growth Index</div>
+                  <div class="h3 mb-0" id="untreatedGrowthIndex">{{ "%.2f"|format((latest.untreated_white_area / latest.expected_seed_count) if latest else 0) }}</div>
+                  <div class="text-secondary"><span id="untreatedSprouts">{{ latest.untreated_sprout_count if latest else 0 }}</span> germinated chickpeas</div>
+                </div>
+              </div>
+              <div class="col-sm-6">
+                <div class="comparison-row">
+                  <div class="metric-label">Growth Difference</div>
+                  <div class="h3 mb-0" id="growthPercentGap">{{ "%.2f"|format((((latest.treated_white_area - latest.untreated_white_area) / latest.untreated_white_area) * 100) if latest and latest.untreated_white_area > 0 else 0) }}%</div>
+                </div>
+              </div>
+              <div class="col-sm-6">
+                <div class="comparison-row">
+                  <div class="metric-label">Radicle Area Difference</div>
+                  <div class="h3 mb-0" id="growthGap">{{ "%.0f"|format((latest.treated_white_area - latest.untreated_white_area) if latest else 0) }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="feature-card h-100">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+              <h2 class="section-title h5 mb-0">Seed Image Monitoring Feature</h2>
               <span class="badge rounded-pill badge-soft" id="cameraState">Idle</span>
             </div>
             <div class="row g-3">
@@ -291,61 +353,66 @@
                   <canvas id="snapshotCanvas" class="d-none"></canvas>
                 </div>
                 <div class="split-labels mt-2">
-                  <div class="split-label">Pre-treated</div>
-                  <div class="split-label">Untreated</div>
+                  <div class="split-label">Treated</div>
+                  <div class="split-label">Control</div>
                 </div>
               </div>
               <div class="col-md-5">
-                <label for="seedCount" class="form-label">Expected seeds per batch</label>
+                <label for="seedCount" class="form-label">Chickpeas per batch</label>
                 <input id="seedCount" class="form-control mb-3" type="number" min="1" value="{{ latest.expected_seed_count if latest else 25 }}">
 
                 <label for="captureInterval" class="form-label">Auto interval seconds</label>
                 <input id="captureInterval" class="form-control mb-3" type="number" min="5" value="1800">
 
                 <div class="d-grid gap-2">
-                  <button class="btn btn-forest" id="startCameraBtn" type="button">Start Webcam</button>
-                  <button class="btn btn-outline-forest" id="captureBtn" type="button" disabled>Capture Both Batches</button>
+                  <button class="btn btn-forest" id="startCameraBtn" type="button">Start Camera</button>
+                  <button class="btn btn-outline-forest" id="captureBtn" type="button" disabled>Analyze Chickpeas</button>
                   <button class="btn btn-outline-forest" id="autoBtn" type="button" disabled>Start Auto Monitor</button>
                 </div>
-
                 <div class="status-line mt-3" id="statusLine"></div>
               </div>
             </div>
           </div>
         </div>
-
-        <div class="col-lg-4">
-          <div class="panel h-100">
-            <h2 class="section-title h5 mb-3">ESP32-CAM Option</h2>
-            <label class="form-label">Upload target</label>
-            <div class="endpoint-box mb-3" id="endpointBox"></div>
-            <label for="localImage" class="form-label">Local side-by-side JPEG test</label>
-            <input class="form-control mb-3" id="localImage" type="file" accept="image/jpeg,image/png">
-            <button class="btn btn-forest w-100" id="uploadFileBtn" type="button">Analyze Selected Image</button>
-            <div class="status-line mt-3">Mount the ESP32-CAM so both trays stay in the same frame: pre-treated on the left, untreated on the right.</div>
-          </div>
-        </div>
       </section>
 
-      <section class="panel mb-4">
-        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
-          <div>
-            <h2 class="section-title h5 mb-1">Timelapse Export</h2>
-            <p class="text-secondary mb-0">Build an MP4 from saved overlay frames after auto monitoring finishes.</p>
-          </div>
-          <div class="d-flex flex-wrap gap-2">
-            <input class="form-control" id="timelapseDays" type="number" min="1" value="3" style="width: 96px" aria-label="Timelapse days">
-            <input class="form-control" id="timelapseFps" type="number" min="1" value="6" style="width: 96px" aria-label="Timelapse fps">
-            <button class="btn btn-forest" id="timelapseBtn" type="button">Create Timelapse</button>
+      <section class="row g-3 mb-4">
+        <div class="col-lg-6">
+          <div class="panel h-100">
+            <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
+              <h2 class="section-title h5 mb-0">ESP32-CAM Upload</h2>
+              <button class="btn btn-outline-forest btn-sm" id="clearPhotosBtn" type="button">Clear Photos</button>
+            </div>
+            <label class="form-label">Raw JPEG endpoint</label>
+            <div class="endpoint-box mb-3" id="endpointBox"></div>
+            <label for="localImage" class="form-label">Local side-by-side image test</label>
+            <input class="form-control mb-3" id="localImage" type="file" accept="image/jpeg,image/png">
+            <button class="btn btn-forest" id="uploadFileBtn" type="button">Analyze Selected Image</button>
+            <div class="status-line mt-3" id="clearPhotosStatus"></div>
           </div>
         </div>
-        <div class="status-line mt-3" id="timelapseStatus"></div>
-        <video class="timelapse-video" id="timelapseVideo" controls></video>
+        <div class="col-lg-6">
+          <div class="panel h-100">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+              <div>
+                <h2 class="section-title h5 mb-1">Timelapse Export</h2>
+                <p class="text-secondary mb-0">Build an MP4 from saved chickpea overlay frames.</p>
+              </div>
+              <div class="d-flex flex-wrap gap-2">
+                <input class="form-control" id="timelapseDays" type="number" min="1" value="3" style="width: 96px" aria-label="Timelapse days">
+                <input class="form-control" id="timelapseFps" type="number" min="1" value="6" style="width: 96px" aria-label="Timelapse fps">
+                <button class="btn btn-forest" id="timelapseBtn" type="button">Create Timelapse</button>
+              </div>
+            </div>
+            <div class="status-line mt-3" id="timelapseStatus"></div>
+            <video class="timelapse-video" id="timelapseVideo" controls></video>
+          </div>
+        </div>
       </section>
 
       <section>
         <div class="d-flex align-items-center justify-content-between mb-3">
-          <h2 class="section-title h5 mb-0">Recent Comparison Frames</h2>
+          <h2 class="section-title h5 mb-0">Recent Chickpea Image Analyses</h2>
           <span class="text-secondary small" id="galleryCount">{{ logs|length }} shown</span>
         </div>
 
@@ -353,14 +420,14 @@
           {% for log in logs %}
             <div class="col-sm-6 col-lg-4">
               <article class="gallery-card h-100">
-                <img src="{{ url_for('static', filename=log.overlay_image_path.replace('static/', '')) }}" alt="Analyzed batch comparison overlay">
+                <img src="{{ url_for('static', filename=log.overlay_image_path.replace('static/', '')) }}" alt="Analyzed chickpea overlay">
                 <div class="gallery-meta">
                   <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="badge rounded-pill badge-soft">{{ log.treated_sprout_count }} vs {{ log.untreated_sprout_count }} sprouts</span>
+                    <span class="badge rounded-pill badge-soft">growth {{ "%.1f"|format((((log.treated_white_area - log.untreated_white_area) / log.untreated_white_area) * 100) if log.untreated_white_area > 0 else 0) }}%</span>
                     <span class="text-secondary small">{{ log.timestamp.strftime("%Y-%m-%d %H:%M") }}</span>
                   </div>
-                  <div class="text-secondary small">Germination: {{ "%.2f"|format(log.treated_germination_percentage) }}% vs {{ "%.2f"|format(log.untreated_germination_percentage) }}%</div>
-                  <div class="text-secondary small">Area: {{ "%.0f"|format(log.treated_white_area) }} vs {{ "%.0f"|format(log.untreated_white_area) }}</div>
+                  <div class="text-secondary small">Germinated: {{ log.treated_sprout_count }} vs {{ log.untreated_sprout_count }}</div>
+                  <div class="text-secondary small">Growth index: {{ "%.2f"|format(log.treated_white_area / log.expected_seed_count) }} vs {{ "%.2f"|format(log.untreated_white_area / log.expected_seed_count) }}</div>
                 </div>
               </article>
             </div>
@@ -369,8 +436,8 @@
 
         {% if not logs %}
           <div class="empty-state p-5 text-center" id="emptyState">
-            <h3 class="h5 text-secondary mb-2">No comparison frames yet</h3>
-            <p class="text-secondary mb-0">Start the webcam or upload a side-by-side JPEG frame.</p>
+            <h3 class="h5 text-secondary mb-2">No chickpea image analyses yet</h3>
+            <p class="text-secondary mb-0">Use the seed image monitoring feature or upload an ESP32-CAM frame.</p>
           </div>
         {% endif %}
       </section>
@@ -397,11 +464,14 @@
       const timelapseFps = document.getElementById("timelapseFps");
       const timelapseStatus = document.getElementById("timelapseStatus");
       const timelapseVideo = document.getElementById("timelapseVideo");
-
+      const clearPhotosBtn = document.getElementById("clearPhotosBtn");
+      const clearPhotosStatus = document.getElementById("clearPhotosStatus");
       let stream = null;
       let autoTimer = null;
+      let sensorTimer = null;
 
       updateEndpoint();
+      startSensorStream();
 
       seedCount.addEventListener("input", updateEndpoint);
 
@@ -415,9 +485,9 @@
           captureBtn.disabled = false;
           autoBtn.disabled = false;
           cameraState.textContent = "Live";
-          setStatus("Webcam ready. Keep pre-treated seeds on the left and untreated seeds on the right.");
+          setStatus("Camera ready. Keep treated chickpeas on the left and control chickpeas on the right.");
         } catch (error) {
-          setStatus("Camera access failed. Check browser permissions or use local JPEG upload.");
+          setStatus("Camera access failed. Check browser permissions or use local image upload.");
         }
       });
 
@@ -453,10 +523,30 @@
       uploadFileBtn.addEventListener("click", async () => {
         const file = localImage.files[0];
         if (!file) {
-          setStatus("Select a side-by-side JPEG or PNG first.");
+          setStatus("Select a side-by-side chickpea image first.");
           return;
         }
         await uploadImageBlob(file);
+      });
+
+      clearPhotosBtn.addEventListener("click", async () => {
+        clearPhotosStatus.textContent = "Clearing saved image analyses...";
+        const response = await fetch("/clear_photos", { method: "POST" });
+        if (response.ok) {
+          galleryGrid.innerHTML = "";
+          galleryCount.textContent = "0 shown";
+          updateStats({
+            treated_growth_index: 0,
+            untreated_growth_index: 0,
+            growth_percentage_difference: 0,
+            white_area_difference: 0,
+            treated_sprout_count: 0,
+            untreated_sprout_count: 0
+          });
+          clearPhotosStatus.textContent = "Saved photos and image analysis history cleared.";
+        } else {
+          clearPhotosStatus.textContent = "Could not clear photos.";
+        }
       });
 
       timelapseBtn.addEventListener("click", async () => {
@@ -485,7 +575,7 @@
 
       async function captureWebcamBlob() {
         if (!stream || !webcam.videoWidth) {
-          setStatus("Start the webcam before capturing.");
+          setStatus("Start the camera before capturing.");
           return null;
         }
 
@@ -501,7 +591,7 @@
 
       async function uploadImageBlob(blob) {
         const count = Math.max(Number(seedCount.value) || 25, 1);
-        setStatus("Analyzing both batches...");
+        setStatus("Analyzing chickpea radicals...");
 
         try {
           const response = await fetch(`/upload_image?seed_count=${count}`, {
@@ -516,32 +606,47 @@
           }
 
           updateStats(payload);
-          updateComparison(payload.comparison);
           prependGalleryCard(payload);
-          setStatus("Comparison saved.");
+          setStatus("Chickpea image analysis saved.");
         } catch (error) {
           setStatus(error.message);
         }
       }
 
-      function updateStats(log) {
-        document.getElementById("treatedGermination").textContent = `${Number(log.treated_germination_percentage).toFixed(2)}%`;
-        document.getElementById("untreatedGermination").textContent = `${Number(log.untreated_germination_percentage).toFixed(2)}%`;
-        document.getElementById("treatedSprouts").textContent = log.treated_sprout_count;
-        document.getElementById("untreatedSprouts").textContent = log.untreated_sprout_count;
-        document.getElementById("germinationGap").textContent = `${Number(log.germination_difference).toFixed(2)}%`;
-        document.getElementById("growthGap").textContent = Number(log.white_area_difference).toFixed(0);
+      function updateEnvironment(env) {
+        document.getElementById("suitabilityValue").textContent = `${Number(env.germination_suitability).toFixed(1)}%`;
+        document.getElementById("suitabilityBar").style.width = `${Number(env.germination_suitability)}%`;
+        document.getElementById("temperatureValue").textContent = `${Number(env.temperature_c).toFixed(1)}°C`;
+        document.getElementById("temperatureScore").textContent = Number(env.temperature_score).toFixed(1);
+        document.getElementById("humidityValue").textContent = `${Number(env.humidity_percent).toFixed(1)}%`;
+        document.getElementById("moistureStress").textContent = Number(env.moisture_stress).toFixed(1);
+        document.getElementById("vpdValue").textContent = Number(env.vapor_pressure_deficit).toFixed(2);
+        document.getElementById("riskLabel").textContent = env.risk_label;
+        document.getElementById("sensorTimestamp").textContent = new Date(env.timestamp).toLocaleTimeString();
+        document.getElementById("sensorState").textContent = "Sensor stream active";
       }
 
-      function updateComparison(summary) {
-        if (!summary) {
-          return;
+      function startSensorStream() {
+        refreshEnvironment();
+        sensorTimer = setInterval(refreshEnvironment, 3000);
+      }
+
+      async function refreshEnvironment() {
+        try {
+          const response = await fetch("/api/environment");
+          updateEnvironment(await response.json());
+        } catch (error) {
+          document.getElementById("sensorState").textContent = "Sensor stream paused";
         }
-        document.getElementById("leaderText").textContent = summary.leader;
-        document.getElementById("treatedSpeed").textContent = `${Number(summary.treated_germination_speed).toFixed(2)} pp/day`;
-        document.getElementById("untreatedSpeed").textContent = `${Number(summary.untreated_germination_speed).toFixed(2)} pp/day`;
-        document.getElementById("speedGap").textContent = `${Number(summary.germination_speed_difference).toFixed(2)} pp/day`;
-        document.getElementById("areaSpeedGap").textContent = `${Number(summary.growth_speed_difference).toFixed(0)} px/day`;
+      }
+
+      function updateStats(log) {
+        document.getElementById("treatedGrowthIndex").textContent = Number(log.treated_growth_index).toFixed(2);
+        document.getElementById("untreatedGrowthIndex").textContent = Number(log.untreated_growth_index).toFixed(2);
+        document.getElementById("treatedSprouts").textContent = log.treated_sprout_count;
+        document.getElementById("untreatedSprouts").textContent = log.untreated_sprout_count;
+        document.getElementById("growthPercentGap").textContent = `${Number(log.growth_percentage_difference).toFixed(2)}%`;
+        document.getElementById("growthGap").textContent = Number(log.white_area_difference).toFixed(0);
       }
 
       function prependGalleryCard(log) {
@@ -561,14 +666,14 @@
         wrapper.className = "col-sm-6 col-lg-4";
         wrapper.innerHTML = `
           <article class="gallery-card h-100">
-            <img src="${log.overlay_url}" alt="Analyzed batch comparison overlay">
+            <img src="${log.overlay_url}" alt="Analyzed chickpea overlay">
             <div class="gallery-meta">
               <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="badge rounded-pill badge-soft">${log.treated_sprout_count} vs ${log.untreated_sprout_count} sprouts</span>
+                <span class="badge rounded-pill badge-soft">growth ${Number(log.growth_percentage_difference).toFixed(1)}%</span>
                 <span class="text-secondary small">${timestamp}</span>
               </div>
-              <div class="text-secondary small">Germination: ${Number(log.treated_germination_percentage).toFixed(2)}% vs ${Number(log.untreated_germination_percentage).toFixed(2)}%</div>
-              <div class="text-secondary small">Area: ${Number(log.treated_white_area).toFixed(0)} vs ${Number(log.untreated_white_area).toFixed(0)}</div>
+              <div class="text-secondary small">Germinated: ${log.treated_sprout_count} vs ${log.untreated_sprout_count}</div>
+              <div class="text-secondary small">Growth index: ${Number(log.treated_growth_index).toFixed(2)} vs ${Number(log.untreated_growth_index).toFixed(2)}</div>
             </div>
           </article>
         `;

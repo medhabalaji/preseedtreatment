@@ -25,7 +25,7 @@ def analyze_image(
     max_contour_area_ratio=0.08,
     blur_kernel=(5, 5),
 ):
-    """Detect bright seed radicals in left/right batches and save an annotated overlay."""
+    """Detect bright chickpea radicals in left/right batches and save an annotated overlay."""
     image_path = Path(image_path)
     overlay_path = Path(overlay_path)
 
@@ -73,8 +73,8 @@ def analyze_image(
     untreated_white_area = float(cv2.countNonZero(filtered_mask[:, midpoint:]))
 
     cv2.line(overlay, (midpoint, 0), (midpoint, image.shape[0]), (45, 106, 79), 3)
-    draw_label(overlay, "Pre-treated", (18, 34))
-    draw_label(overlay, "Untreated", (midpoint + 18, 34))
+    draw_label(overlay, "Treated chickpea", (18, 34))
+    draw_label(overlay, "Control chickpea", (midpoint + 18, 34))
 
     overlay_path.parent.mkdir(parents=True, exist_ok=True)
     cv2.imwrite(str(overlay_path), overlay)

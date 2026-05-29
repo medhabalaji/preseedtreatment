@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+import math
 from pathlib import Path
 from uuid import uuid4
 
@@ -54,8 +55,41 @@ class GrowthLog(db.Model):
                 2,
             ),
             "white_area_difference": round(self.treated_white_area - self.untreated_white_area, 2),
+            "treated_growth_index": calculate_growth_index(self.treated_white_area, self.expected_seed_count),
+            "untreated_growth_index": calculate_growth_index(self.untreated_white_area, self.expected_seed_count),
+            "growth_percentage_difference": calculate_percentage_difference(
+                self.treated_white_area,
+                self.untreated_white_area,
+            ),
             "raw_image_path": self.raw_image_path,
             "overlay_image_path": self.overlay_image_path,
+        }
+
+
+class EnvironmentLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    temperature_c = db.Column(db.Float, nullable=False)
+    humidity_percent = db.Column(db.Float, nullable=False)
+    temperature_score = db.Column(db.Float, nullable=False)
+    humidity_score = db.Column(db.Float, nullable=False)
+    germination_suitability = db.Column(db.Float, nullable=False)
+    moisture_stress = db.Column(db.Float, nullable=False)
+    vapor_pressure_deficit = db.Column(db.Float, nullable=False)
+    risk_label = db.Column(db.String(80), nullable=False)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "timestamp": self.timestamp.isoformat(),
+            "temperature_c": self.temperature_c,
+            "humidity_percent": self.humidity_percent,
+            "temperature_score": self.temperature_score,
+            "humidity_score": self.humidity_score,
+            "germination_suitability": self.germination_suitability,
+            "moisture_stress": self.moisture_stress,
+            "vapor_pressure_deficit": self.vapor_pressure_deficit,
+            "risk_label": self.risk_label,
         }
 
 
@@ -76,7 +110,14 @@ def create_app():
         logs = GrowthLog.query.order_by(GrowthLog.timestamp.desc()).limit(10).all()
         latest = logs[0] if logs else None
         comparison = build_comparison_summary(days=3)
-        return render_template("index.html", logs=logs, latest=latest, comparison=comparison)
+        environment = get_or_create_environment_snapshot()
+        return render_template(
+            "index.html",
+            logs=logs,
+            latest=latest,
+            comparison=comparison,
+            environment=environment,
+        )
 
     @app.route("/upload_image", methods=["POST"])
     def upload_image():
@@ -146,6 +187,16 @@ def create_app():
         payload["raw_url"] = url_for("static", filename=log.raw_image_path.replace("static/", ""))
         return jsonify(payload)
 
+    @app.route("/api/environment")
+    def api_environment():
+        return jsonify(create_environment_log().to_dict())
+
+    @app.route("/api/environment/simulate", methods=["POST"])
+    def api_environment_simulate():
+        temperature = request.args.get("temperature", type=float)
+        humidity = request.args.get("humidity", type=float)
+        return jsonify(create_environment_log(temperature, humidity).to_dict()), 201
+
     @app.route("/create_timelapse", methods=["POST"])
     def create_timelapse():
         days = request.args.get("days", 3, type=int)
@@ -155,6 +206,11 @@ def create_app():
             return jsonify(result), 400
         result["timelapse_url"] = url_for("static", filename=f"timelapses/{result['filename']}")
         return jsonify(result), 201
+
+    @app.route("/clear_photos", methods=["POST"])
+    def clear_photos():
+        clear_image_history()
+        return jsonify({"status": "cleared"}), 200
 
     return app
 
@@ -222,6 +278,112 @@ def calculate_germination_percentage(sprout_count, expected_seed_count):
     return round(min(percentage, 100.0), 2)
 
 
+def calculate_growth_index(white_area, expected_seed_count):
+    if expected_seed_count <= 0:
+        return 0.0
+    return round(white_area / expected_seed_count, 2)
+
+
+def calculate_percentage_difference(treated_value, control_value):
+    if control_value <= 0:
+        return 100.0 if treated_value > 0 else 0.0
+    return round(((treated_value - control_value) / control_value) * 100, 2)
+
+
+def get_or_create_environment_snapshot():
+    latest = EnvironmentLog.query.order_by(EnvironmentLog.timestamp.desc()).first()
+    if latest and datetime.now(timezone.utc) - as_utc(latest.timestamp) < timedelta(minutes=5):
+        return latest
+    return create_environment_log()
+
+
+def create_environment_log(temperature=None, humidity=None):
+    if temperature is None or humidity is None:
+        simulated = simulate_chickpea_environment()
+        temperature = simulated["temperature_c"]
+        humidity = simulated["humidity_percent"]
+
+    metrics = calculate_chickpea_environment_metrics(temperature, humidity)
+    log = EnvironmentLog(
+        temperature_c=metrics["temperature_c"],
+        humidity_percent=metrics["humidity_percent"],
+        temperature_score=metrics["temperature_score"],
+        humidity_score=metrics["humidity_score"],
+        germination_suitability=metrics["germination_suitability"],
+        moisture_stress=metrics["moisture_stress"],
+        vapor_pressure_deficit=metrics["vapor_pressure_deficit"],
+        risk_label=metrics["risk_label"],
+    )
+    db.session.add(log)
+    db.session.commit()
+    return log
+
+
+def simulate_chickpea_environment():
+    now = datetime.now(timezone.utc)
+    seconds = now.hour * 3600 + now.minute * 60 + now.second
+    day_angle = (seconds / 86400) * 2 * math.pi
+    short_wave = (seconds / 90) * 2 * math.pi
+    temperature = 24.5 + 3.2 * math.sin(day_angle - math.pi / 3) + 0.45 * math.sin(short_wave)
+    humidity = 68 - 8.5 * math.sin(day_angle - math.pi / 4) + 1.8 * math.cos(short_wave * 0.8)
+    return {
+        "temperature_c": round(temperature, 1),
+        "humidity_percent": round(min(max(humidity, 45), 88), 1),
+    }
+
+
+def calculate_chickpea_environment_metrics(temperature, humidity):
+    temperature = round(float(temperature), 1)
+    humidity = round(float(humidity), 1)
+    temperature_score = triangular_score(temperature, low=15, optimum_low=22, optimum_high=28, high=35)
+    humidity_score = triangular_score(humidity, low=45, optimum_low=60, optimum_high=75, high=90)
+    suitability = round((temperature_score * 0.58) + (humidity_score * 0.42), 1)
+    moisture_stress = round(max(0, 100 - humidity_score), 1)
+    vpd = calculate_vapor_pressure_deficit(temperature, humidity)
+
+    if temperature < 15:
+        risk_label = "Cold delay risk"
+    elif temperature > 35:
+        risk_label = "Heat stress risk"
+    elif humidity > 88:
+        risk_label = "Excess moisture/fungal risk"
+    elif humidity < 45:
+        risk_label = "Drying stress risk"
+    elif suitability >= 80:
+        risk_label = "Favorable for chickpea germination"
+    elif suitability >= 55:
+        risk_label = "Moderate germination conditions"
+    else:
+        risk_label = "Suboptimal germination conditions"
+
+    return {
+        "temperature_c": temperature,
+        "humidity_percent": humidity,
+        "temperature_score": temperature_score,
+        "humidity_score": humidity_score,
+        "germination_suitability": suitability,
+        "moisture_stress": moisture_stress,
+        "vapor_pressure_deficit": vpd,
+        "risk_label": risk_label,
+    }
+
+
+def triangular_score(value, low, optimum_low, optimum_high, high):
+    if value <= low or value >= high:
+        return 0.0
+    if optimum_low <= value <= optimum_high:
+        return 100.0
+    if value < optimum_low:
+        return round(((value - low) / (optimum_low - low)) * 100, 1)
+    return round(((high - value) / (high - optimum_high)) * 100, 1)
+
+
+def calculate_vapor_pressure_deficit(temperature, humidity):
+    saturation_vapor_pressure = 0.6108 * math.exp((17.27 * temperature) / (temperature + 237.3))
+    actual_vapor_pressure = saturation_vapor_pressure * (humidity / 100)
+    return round(max(saturation_vapor_pressure - actual_vapor_pressure, 0), 2)
+
+
 def build_comparison_summary(days=3):
     since = datetime.now(timezone.utc) - timedelta(days=days)
     logs = (
@@ -235,7 +397,7 @@ def build_comparison_summary(days=3):
 
     first = logs[0]
     latest = logs[-1]
-    elapsed_days = max((latest.timestamp - first.timestamp).total_seconds() / 86400, 1 / 86400)
+    elapsed_days = max((as_utc(latest.timestamp) - as_utc(first.timestamp)).total_seconds() / 86400, 1 / 86400)
     latest_germination_difference = round(
         latest.treated_germination_percentage - latest.untreated_germination_percentage,
         2,
@@ -275,6 +437,10 @@ def build_comparison_summary(days=3):
         "growth_speed_difference": round(treated_growth_speed - untreated_growth_speed, 2),
         "latest_germination_difference": latest_germination_difference,
         "latest_growth_difference": latest_growth_difference,
+        "latest_growth_percentage_difference": calculate_percentage_difference(
+            latest.treated_white_area,
+            latest.untreated_white_area,
+        ),
         "leader": choose_leader(latest),
     }
 
@@ -292,12 +458,19 @@ def empty_comparison(days, sample_count):
         "growth_speed_difference": 0,
         "latest_germination_difference": 0,
         "latest_growth_difference": 0,
-        "leader": "Collect at least two frames to compare speed.",
+        "latest_growth_percentage_difference": 0,
+        "leader": "Collect at least two chickpea image frames to compare speed.",
     }
 
 
 def rate_per_day(latest_value, first_value, elapsed_days):
     return round((latest_value - first_value) / elapsed_days, 2)
+
+
+def as_utc(value):
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
 
 
 def choose_leader(log):
@@ -306,8 +479,8 @@ def choose_leader(log):
     if abs(germination_gap) < 1 and abs(growth_gap) < 50:
         return "No clear difference yet."
     if germination_gap > 0 or growth_gap > 0:
-        return "Pre-treated batch is ahead."
-    return "Untreated batch is ahead."
+        return "Treated chickpea batch is ahead."
+    return "Control chickpea batch is ahead."
 
 
 def build_timelapse(days=3, fps=6):
@@ -342,7 +515,7 @@ def build_timelapse(days=3, fps=6):
     if len(frames) < 2:
         return {"error": "Could not read enough overlay frames to create a timelapse."}
 
-    filename = f"moong_timelapse_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.mp4"
+    filename = f"chickpea_timelapse_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.mp4"
     output_path = TIMELAPSE_DIR / filename
     writer = cv2.VideoWriter(str(output_path), cv2.VideoWriter_fourcc(*"mp4v"), fps, frame_size)
 
@@ -359,11 +532,24 @@ def build_timelapse(days=3, fps=6):
     }
 
 
+def clear_image_history():
+    for log in GrowthLog.query.all():
+        for image_path in [log.raw_image_path, log.overlay_image_path]:
+            path = BASE_DIR / image_path
+            path.unlink(missing_ok=True)
+        db.session.delete(log)
+
+    for timelapse_path in TIMELAPSE_DIR.glob("*.mp4"):
+        timelapse_path.unlink(missing_ok=True)
+
+    db.session.commit()
+
+
 def add_timelapse_caption(frame, log):
     text_lines = [
         log.timestamp.strftime("%Y-%m-%d %H:%M"),
-        f"Pre-treated: {log.treated_germination_percentage:.1f}% | {log.treated_white_area:.0f}px",
-        f"Untreated: {log.untreated_germination_percentage:.1f}% | {log.untreated_white_area:.0f}px",
+        f"Treated chickpea: {log.treated_germination_percentage:.1f}% | {log.treated_white_area:.0f}px",
+        f"Control chickpea: {log.untreated_germination_percentage:.1f}% | {log.untreated_white_area:.0f}px",
     ]
     padding = 12
     line_height = 28
